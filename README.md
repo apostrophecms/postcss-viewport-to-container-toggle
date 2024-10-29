@@ -1,4 +1,4 @@
-# postcss-viewport-to-container-units
+# postcss-copy-viewport-to-container-units
 
 A plugin for [PostCSS](https://github.com/postcss/postcss) that copies viewport units like `vw` and `vh` to container units like `cqw` and `cqh` in a specific selector.
 
