@@ -1,5 +1,5 @@
 {
-  "name": "postcss-copy-viewport-to-container-units",
+  "name": "@apostrophecms/postcss",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
