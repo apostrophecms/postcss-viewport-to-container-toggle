@@ -1,0 +1,20 @@
+{
+  "name": "postcss-viewport-to-container-units",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "lint && mocha",
+    "mocha": "mocha",
+    "lint": "eslint ."
+  },
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-apostrophe": "^4.3.0",
+    "mocha": "^10.7.3",
+    "postcss": "^8.4.47"
+  }
+}
