@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "type": "module",
   "scripts": {
-    "test": "lint && mocha",
+    "test": "eslint && mocha",
     "mocha": "mocha",
-    "lint": "eslint ."
+    "eslint": "eslint --ext .js,.vue ."
   },
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",

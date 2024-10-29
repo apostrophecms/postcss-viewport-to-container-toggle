@@ -1,6 +1,6 @@
-import postcss from 'postcss';
-import { equal, deepEqual } from 'node:assert';
-import plugin from '../index.js';
+const postcss = require('postcss');
+const { equal, deepEqual } = require('node:assert');
+const plugin = require('../index.js');
 const opts = { selector: ':where(body[data-breakpoint-preview-mode])' };
 
 describe('postcss-viewport-to-container-units', () => {
