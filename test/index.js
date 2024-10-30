@@ -55,7 +55,7 @@ describe('postcss-viewport-to-container-units', () => {
     await run(postcssCopyViewportToContainerUnits, input, output, copyViewportOpts);
   });
 
-  it.only('should work properly inside media queries', async () => {
+  it('should work properly inside media queries', async () => {
     const input = `
 @media only screen and (width > 600px) and (max-width: 1000px) {
   .hello {
@@ -70,17 +70,51 @@ describe('postcss-viewport-to-container-units', () => {
     transform: translateX(20vw);
   }
 }
+
+.toto {
+  width: 100vh;
+  color: white;
+}
 `;
 
     const output = `
+@media only screen and (width > 600px) and (max-width: 1000px) {
+  .hello {
+    top: 0;
+    width: 100vw;
+    height: calc(100vh - 50px);
+  }
+  :where(body[data-breakpoint-preview-mode]) .hello {
+    width: 100cqw;
+    height: calc(100cqh - 50px);
+  }
 
+  .goodbye {
+    width: 100%;
+    color: #fff;
+    transform: translateX(20vw);
+  }
+
+  :where(body[data-breakpoint-preview-mode]) .goodbye {
+    transform: translateX(20cqw);
+  }
+}
+
+.toto {
+  width: 100vh;
+  color: white;
+}
+
+:where(body[data-breakpoint-preview-mode]) .toto {
+  width: 100cqh;
+}
 `;
 
     await run(postcssCopyViewportToContainerUnits, input, output, copyViewportOpts);
   });
 });
 
-describe('postcss-media-to-container-queries', () => {
+describe.only('postcss-media-to-container-queries', () => {
   it('should convert media queries to container queries with one sub rule', async () => {
     const input = `
 @media only screen and (width > 600px) and (max-width: 1000px) {
@@ -155,7 +189,7 @@ describe('postcss-media-to-container-queries', () => {
 
   .goodbye {
     width: 100%;
-    color: # fff;
+    color: #fff;
   }
 }
 `;
@@ -177,7 +211,7 @@ describe('Plugins combination', () => {
 
   .goodbye {
     width: 100%;
-    color: # fff;
+    color: #fff;
     transform: translateX(20vw);
   }
 }
@@ -189,10 +223,17 @@ describe('Plugins combination', () => {
     position: absolute;
     top: 0;
   }
+  :where(body[data-breakpoint-preview-mode]) .hello {
+    width: 100cqw;
+    height: calc(100cqh - 50px);
+  }
 
   .goodbye {
     width: 100%;
     color: # fff;
+  }
+  :where(body[data-breakpoint-preview-mode]) .goodbye {
+    transform: translateX(20cqw);
   }
 }
 `;
@@ -212,7 +253,6 @@ describe('Plugins combination', () => {
 async function run(plugin, input, output, opts = {}) {
   const result = await postcss([ plugin(opts) ]).process(input, { from: undefined });
 
-  console.log('result.css', result.css);
   equal(result.css, output);
   deepEqual(result.warnings(), []);
 }

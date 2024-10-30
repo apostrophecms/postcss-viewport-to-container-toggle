@@ -11,6 +11,10 @@ module.exports = ({
       root.walkRules(rule => {
         const declsToCopy = [];
 
+        if (rule.selector.includes(selector)) {
+          return;
+        }
+
         rule.walkDecls(decl => {
           let value = decl.value;
           if (Object.keys(units).every(unit => !value.includes(unit))) {
@@ -34,7 +38,7 @@ module.exports = ({
           nodes: declsToCopy
         });
 
-        root.insertAfter(rule, prefixedRule);
+        rule.parent.insertAfter(rule, prefixedRule);
       });
     }
   };
