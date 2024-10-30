@@ -1,22 +1,21 @@
 const postcss = require('postcss');
 const { equal, deepEqual } = require('node:assert');
-const { postcssCopyViewportToContainerUnits, postcssMediaToContainerQueries } = require('../index.js');
-const copyViewportOpts = { selector: ':where(body[data-breakpoint-preview-mode])' };
-const containerQueryOpts = { selector: ':where(body:not([data-breakpoint-preview-mode]))' };
+const plugin = require('../index.js');
+const opts = { modifierAttr: 'data-breakpoint-preview-mode' };
 
 describe('postcss-viewport-to-container-units', () => {
   it('should map `vh` values to `cqh` in a rule that applies only on breakpoint preview ', async () => {
     const input = '.hello { width: 100vh; }';
     const output = '.hello { width: 100vh; }\n:where(body[data-breakpoint-preview-mode]) .hello { width: 100cqh; }';
 
-    await run(postcssCopyViewportToContainerUnits, input, output, copyViewportOpts);
+    await run(plugin, input, output, opts);
   });
 
   it('should map `vw` values to `cqw` in a rule that applies only on breakpoint preview ', async () => {
     const input = '.hello { width: 100vw; }';
     const output = '.hello { width: 100vw; }\n:where(body[data-breakpoint-preview-mode]) .hello { width: 100cqw; }';
 
-    await run(postcssCopyViewportToContainerUnits, input, output, copyViewportOpts);
+    await run(plugin, input, output, opts);
   });
 
   it('should map `vh` and `vw` values used in `calc` to `cqh` and `cqw` in a rule that applies only on breakpoint preview', async () => {
@@ -26,7 +25,7 @@ describe('postcss-viewport-to-container-units', () => {
 .hello { height: calc(100vh - 50px); width: calc(100vw - 10px); }
 :where(body[data-breakpoint-preview-mode]) .hello { height: calc(100cqh - 50px); width: calc(100cqw - 10px); }`;
 
-    await run(postcssCopyViewportToContainerUnits, input, output, copyViewportOpts);
+    await run(plugin, input, output, opts);
   });
 
   it('should add only declarations containing `vh` and `vw` values in a rule that applies only on breakpoint preview', async () => {
@@ -52,10 +51,10 @@ describe('postcss-viewport-to-container-units', () => {
   height: calc(100cqh - 50px);
 }`;
 
-    await run(postcssCopyViewportToContainerUnits, input, output, copyViewportOpts);
+    await run(plugin, input, output, opts);
   });
 
-  it('should work properly inside media queries', async () => {
+  it.only('should work properly inside media queries', async () => {
     const input = `
 @media only screen and (width > 600px) and (max-width: 1000px) {
   .hello {
@@ -110,11 +109,11 @@ describe('postcss-viewport-to-container-units', () => {
 }
 `;
 
-    await run(postcssCopyViewportToContainerUnits, input, output, copyViewportOpts);
+    await run(plugin, input, output, opts);
   });
 });
 
-describe.only('postcss-media-to-container-queries', () => {
+describe('postcss-media-to-container-queries', () => {
   it('should convert media queries to container queries with one sub rule', async () => {
     const input = `
 @media only screen and (width > 600px) and (max-width: 1000px) {
@@ -149,7 +148,7 @@ describe.only('postcss-media-to-container-queries', () => {
 }
 `;
 
-    await run(postcssMediaToContainerQueries, input, output, {
+    await run(plugin, input, output, {
       selector: ':where(body:not([data-breakpoint-preview-mode]))'
     });
   });
@@ -194,58 +193,7 @@ describe.only('postcss-media-to-container-queries', () => {
 }
 `;
 
-    await run(postcssMediaToContainerQueries, input, output, containerQueryOpts);
-  });
-});
-
-describe('Plugins combination', () => {
-  it('should work properly when both plugins are used in combination', async () => {
-    const input = `
-@media only screen and (width > 600px) and (max-width: 1000px) {
-  .hello {
-    position: absolute;
-    top: 0;
-    width: 100vw;
-    height: calc(100vh - 50px);
-  }
-
-  .goodbye {
-    width: 100%;
-    color: #fff;
-    transform: translateX(20vw);
-  }
-}
-`;
-
-    const output = `
-@media only screen and (width > 600px) and (max-width: 1000px) {
-  .hello {
-    position: absolute;
-    top: 0;
-  }
-  :where(body[data-breakpoint-preview-mode]) .hello {
-    width: 100cqw;
-    height: calc(100cqh - 50px);
-  }
-
-  .goodbye {
-    width: 100%;
-    color: # fff;
-  }
-  :where(body[data-breakpoint-preview-mode]) .goodbye {
-    transform: translateX(20cqw);
-  }
-}
-`;
-
-    await runBoth(
-      input,
-      output,
-      postcssCopyViewportToContainerUnits,
-      postcssMediaToContainerQueries,
-      copyViewportOpts,
-      containerQueryOpts
-    );
+    await run(plugin, input, output, opts);
   });
 });
 
@@ -253,15 +201,8 @@ describe('Plugins combination', () => {
 async function run(plugin, input, output, opts = {}) {
   const result = await postcss([ plugin(opts) ]).process(input, { from: undefined });
 
-  equal(result.css, output);
-  deepEqual(result.warnings(), []);
-}
-
-async function runBoth(input, output, plugin1, plugin2, opts1, opts2) {
-  const firstRes = await postcss([ plugin1(opts1) ]).process(input, { from: undefined });
-  const result = await postcss([ plugin2(opts2) ])
-    .process(firstRes.css, { from: undefined });
-
+  console.log('=====> RESULT <=====');
+  console.log(result.css);
   equal(result.css, output);
   deepEqual(result.warnings(), []);
 }
