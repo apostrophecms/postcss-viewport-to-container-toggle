@@ -23,12 +23,22 @@ module.exports = ({
   transform = null
 } = {}) => {
   const conditionalSelector = `:where(${containerEl}[${modifierAttr}])`;
+  const conditionalNotSelector = `:where(${containerEl}:not([${modifierAttr}]))`;
   const processed = Symbol('processed');
+  const UnitConvertIgnoredRules = [ 'media', 'container' ];
+
   return {
-    postcssPlugin: 'postcss-viewport-to-container',
+    postcssPlugin: 'postcss-viewport-to-container-toggle',
     Rule(rule, { Rule }) {
       const declsToCopy = [];
       if (rule[processed]) {
+        return;
+      }
+      if (
+        UnitConvertIgnoredRules.includes(rule.name) ||
+        UnitConvertIgnoredRules.includes(rule.parent.name)
+      ) {
+        rule[processed] = true;
         return;
       }
 
@@ -88,6 +98,18 @@ module.exports = ({
             .replaceAll(/(only\s*)?(all|screen|print)(,)?(\s)*(and\s*)?/g, '')
         });
 
+        containerAtRule.walkDecls(decl => {
+          if (decl[processed]) {
+            return;
+          }
+          if (Object.keys(units).every(unit => !decl.value.includes(unit))) {
+            return;
+          }
+          for (const [ unitToConvert, newUnit ] of Object.entries(units)) {
+            decl.value = decl.value.replaceAll(unitToConvert, newUnit);
+          }
+        });
+
         // Media query
         // Only apply when data-breakpoint-preview-mode is not set
         atRule.walkRules(rule => {
@@ -97,18 +119,19 @@ module.exports = ({
           const newRule = rule.clone({
             selectors: rule.selectors.map(selector => {
               if (selector.startsWith('body')) {
-                return selector.replace('body', ':where(body:not([data-breakpoint-preview-mode]))');
+                return selector.replace('body', conditionalNotSelector);
               }
 
-              return `:where(body:not([data-breakpoint-preview-mode])) ${selector}`;
+              return `${conditionalNotSelector} ${selector}`;
             })
           });
 
           rule.replaceWith(newRule);
           rule[processed] = true;
+          newRule[processed] = true;
         });
 
-        root.append(containerAtRule);
+        atRule.parent.insertAfter(atRule, containerAtRule);
         atRule[processed] = true;
       }
     }
