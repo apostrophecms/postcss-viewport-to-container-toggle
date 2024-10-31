@@ -141,7 +141,6 @@ describe('postcss-viewport-to-container-toggle', () => {
 async function run(plugin, input, output, opts = {}) {
   const result = await postcss([ plugin(opts) ]).process(input, { from: undefined });
 
-  console.log(result.css);
   equal(result.css, output);
   deepEqual(result.warnings(), []);
 }
