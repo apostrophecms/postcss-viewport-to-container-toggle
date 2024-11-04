@@ -149,7 +149,7 @@ function convertToContainerQuery (mediaFeature, { debug, transform }) {
     DESCRIPTORS.some(descriptor => containerFeature.includes(descriptor)) &&
     OPERATORS.some(operator => containerFeature.includes(operator))
   ) {
-    console.warn('[postcssMediaToContainerQueries] Unsupported media query', containerFeature);
+    console.warn('[postcss-viewport-to-container-toggle] Unsupported media query', containerFeature);
   }
 
   return containerFeature;
