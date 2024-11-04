@@ -135,6 +135,69 @@ describe('postcss-viewport-to-container-toggle', () => {
 
     await run(plugin, input, output, opts);
   });
+
+  it('should work for media query with different params', async () => {
+    const input = `
+@media (width <= 1250px) {
+  .hello {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+@media print and (width > 1250px) {
+  .goodbye {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+@media print, all and (min-width: 500px) {
+  .sun {
+    transform: translateX(50vw);
+    margin-left: 2vw;
+  }
+}
+`;
+
+    const output = `
+@media (width <= 1250px) {
+  :where(body:not([data-breakpoint-preview-mode])) .hello {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+@container (width <= 1250px) {
+  .hello {
+    width: 100cqw;
+    height: 100cqh;
+  }
+}
+
+@media print and (width > 1250px) {
+  .goodbye {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+@media print, all and (min-width: 500px) {
+  :where(body:not([data-breakpoint-preview-mode])) .sun {
+    transform: translateX(50vw);
+    margin-left: 2vw;
+  }
+}
+
+@container (min-width: 500px) {
+  .sun {
+    transform: translateX(50cqw);
+    margin-left: 2cqw;
+  }
+}
+`;
+
+    await run(plugin, input, output, opts);
+  });
 });
 
 // From https://github.com/postcss/postcss-plugin-boilerplate/blob/main/template/index.test.t.js
