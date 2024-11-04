@@ -25,7 +25,7 @@ module.exports = ({
   const conditionalSelector = `:where(${containerEl}[${modifierAttr}])`;
   const conditionalNotSelector = `:where(${containerEl}:not([${modifierAttr}]))`;
   const processed = Symbol('processed');
-  const UnitConvertIgnoredRules = [ 'media', 'container' ];
+  const unitConvertIgnoredRules = [ 'media', 'container' ];
 
   return {
     postcssPlugin: 'postcss-viewport-to-container-toggle',
@@ -35,8 +35,8 @@ module.exports = ({
         return;
       }
       if (
-        UnitConvertIgnoredRules.includes(rule.name) ||
-        UnitConvertIgnoredRules.includes(rule.parent.name)
+        unitConvertIgnoredRules.includes(rule.name) ||
+        unitConvertIgnoredRules.includes(rule.parent.name)
       ) {
         rule[processed] = true;
         return;
