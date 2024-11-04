@@ -27,7 +27,7 @@ This css:
     width: 100vw;
     height: 100vh;
 }
-``````
+```
 
 If you set the `modifierAttr` to `data-breakpoint-preview-mode` and `containerEl` to `body` (default), it'll be converted this way:
 
@@ -131,7 +131,9 @@ const postcssViewportToContainerToggle = require('postcss-viewport-to-container-
       plugins: [
         [
           postcssViewportToContainerToggle({
-            modifierAttr: 'data-breakpoint-preview-mode'
+            modifierAttr: 'data-breakpoint-preview-mode',
+            containerEl: 'body',
+            debug: false
           }),
           'autoprefixer'
         ]
@@ -140,3 +142,30 @@ const postcssViewportToContainerToggle = require('postcss-viewport-to-container-
   }
 }
 ```
+
+### Vite
+
+```javascript
+const postcssViewportToContainerToggle = require('postcss-viewport-to-container-toggle');
+
+{
+    css: {
+      postcss: {
+        plugins: [
+          postcssViewportToContainerToggle({
+            modifierAttr: 'data-breakpoint-preview-mode',
+            containerEl: 'body',
+            debug: false
+          })
+        ]
+      }
+    }
+}
+```
+
+### Options
+
+* `modifierAttr`: The attribute that will be used to toggle between viewport and container units.
+* `containerEl`: The element that will be used as container. Default: `body`
+* `debug`: If set to `true`, will output debug information. Default: `false`
+* `transform`: A function that will be called for each media query, allowing to modify its params when creating the `container`.
