@@ -64,7 +64,6 @@ module.exports = ({
         return;
       }
 
-      // TODO: Think about source
       const prefixedRule = new Rule({
         selector: `${conditionalSelector} ${rule.selector}`,
         nodes: declsToCopy,
@@ -111,15 +110,15 @@ module.exports = ({
         });
 
         // Media query
-        // Only apply when data-breakpoint-preview-mode is not set
+        // Only applied for conditionalNotSelector
         atRule.walkRules(rule => {
           if (rule[processed]) {
             return;
           }
           const newRule = rule.clone({
             selectors: rule.selectors.map(selector => {
-              if (selector.startsWith('body')) {
-                return selector.replace('body', conditionalNotSelector);
+              if (selector.startsWith(containerEl)) {
+                return selector.replace(containerEl, conditionalNotSelector);
               }
 
               return `${conditionalNotSelector} ${selector}`;
