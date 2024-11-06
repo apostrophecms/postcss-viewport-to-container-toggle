@@ -1,9 +1,9 @@
-import postcss from 'postcss';
-import { equal, deepEqual } from 'node:assert';
-import plugin from '../index.js';
-const opts = { selector: ':where(body[data-breakpoint-preview-mode])' };
+const postcss = require('postcss');
+const { equal, deepEqual } = require('node:assert');
+const plugin = require('../index.js');
+const opts = { modifierAttr: 'data-breakpoint-preview-mode' };
 
-describe('postcss-viewport-to-container-units', () => {
+describe('postcss-viewport-to-container-toggle', () => {
   it('should map `vh` values to `cqh` in a rule that applies only on breakpoint preview ', async () => {
     const input = '.hello { width: 100vh; }';
     const output = '.hello { width: 100vh; }\n:where(body[data-breakpoint-preview-mode]) .hello { width: 100cqh; }';
@@ -50,6 +50,151 @@ describe('postcss-viewport-to-container-units', () => {
   width: 100cqw;
   height: calc(100cqh - 50px);
 }`;
+
+    await run(plugin, input, output, opts);
+  });
+
+  it('should work properly inside media queries', async () => {
+    const input = `
+.hey {
+  display: flex;
+  justify-content: center;
+}
+.coucou {
+  display: flex;
+  height: 70vh;
+}
+
+@media only screen and (width > 600px) and (max-width: 1000px) {
+  .hello {
+    top: 0;
+    width: 100vw;
+    height: calc(100vh - 50px);
+  }
+  .goodbye {
+    width: 100%;
+    color: #fff;
+    transform: translateX(20vw);
+  }
+}
+
+.toto {
+  width: 100vh;
+  color: white;
+}
+`;
+
+    const output = `
+.hey {
+  display: flex;
+  justify-content: center;
+}
+.coucou {
+  display: flex;
+  height: 70vh;
+}
+:where(body[data-breakpoint-preview-mode]) .coucou {
+  height: 70cqh;
+}
+
+@media only screen and (width > 600px) and (max-width: 1000px) {
+  :where(body:not([data-breakpoint-preview-mode])) .hello {
+    top: 0;
+    width: 100vw;
+    height: calc(100vh - 50px);
+  }
+  :where(body:not([data-breakpoint-preview-mode])) .goodbye {
+    width: 100%;
+    color: #fff;
+    transform: translateX(20vw);
+  }
+}
+
+@container (width > 600px) and (max-width: 1000px) {
+  .hello {
+    top: 0;
+    width: 100cqw;
+    height: calc(100cqh - 50px);
+  }
+  .goodbye {
+    width: 100%;
+    color: #fff;
+    transform: translateX(20cqw);
+  }
+}
+
+.toto {
+  width: 100vh;
+  color: white;
+}
+
+:where(body[data-breakpoint-preview-mode]) .toto {
+  width: 100cqh;
+}
+`;
+
+    await run(plugin, input, output, opts);
+  });
+
+  it('should work for media query with different params', async () => {
+    const input = `
+@media (width <= 1250px) {
+  .hello {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+@media print and (width > 1250px) {
+  .goodbye {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+@media print, all and (min-width: 500px) {
+  .sun {
+    transform: translateX(50vw);
+    margin-left: 2vw;
+  }
+}
+`;
+
+    const output = `
+@media (width <= 1250px) {
+  :where(body:not([data-breakpoint-preview-mode])) .hello {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+@container (width <= 1250px) {
+  .hello {
+    width: 100cqw;
+    height: 100cqh;
+  }
+}
+
+@media print and (width > 1250px) {
+  .goodbye {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+@media print, all and (min-width: 500px) {
+  :where(body:not([data-breakpoint-preview-mode])) .sun {
+    transform: translateX(50vw);
+    margin-left: 2vw;
+  }
+}
+
+@container (min-width: 500px) {
+  .sun {
+    transform: translateX(50cqw);
+    margin-left: 2cqw;
+  }
+}
+`;
 
     await run(plugin, input, output, opts);
   });
