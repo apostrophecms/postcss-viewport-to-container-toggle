@@ -176,10 +176,6 @@ const plugin = ({
         if (decl.prop === 'position') {
           const stickyDecl = decl.clone({ value: 'sticky' });
           declsToCopy.push(stickyDecl);
-
-          const absoluteDecl = decl.clone({ value: 'absolute' });
-          declsToCopy.push(absoluteDecl);
-
           decl[processed] = true;
           return;
         }
