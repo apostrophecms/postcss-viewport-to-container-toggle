@@ -38,8 +38,8 @@ function convertUnitsInExpression(expression) {
   const TYPOGRAPHY_UNITS = {
     ...DEFAULT_UNITS,
     // Add relative container query units for typography
-    'vmin': 'cqi',  // Use container query inline size for more accurate typography scaling
-    'vmax': 'cqb',  // Use container query block size for vertical scaling
+    vmin: 'cqi', // Use container query inline size for more accurate typography scaling
+    vmax: 'cqb' // Use container query block size for vertical scaling
   };
 
   // Convert fluid typography patterns
@@ -49,7 +49,7 @@ function convertUnitsInExpression(expression) {
   );
 
   // Convert standard units
-  return Object.entries(TYPOGRAPHY_UNITS).reduce((acc, [unit, containerUnit]) => {
+  return Object.entries(TYPOGRAPHY_UNITS).reduce((acc, [ unit, containerUnit ]) => {
     const unitRegex = new RegExp(`(\\d*\\.?\\d+)${unit}`, 'g');
     return acc.replace(unitRegex, `$1${containerUnit}`);
   }, expression);
@@ -95,7 +95,7 @@ function convertMediaFeature(feature) {
   // Handle range syntax like (240px <= width <= 1024px)
   const rangeMatch = feature.match(/(\d+[a-z%]*)\s*<=\s*([a-z-]+)\s*<=\s*(\d+[a-z%]*)/);
   if (rangeMatch) {
-    const [, min, property, max] = rangeMatch;
+    const [ , min, property, max ] = rangeMatch;
     return `min-${property}: ${min}) and (max-${property}: ${max}`;
   }
 
@@ -129,22 +129,40 @@ const plugin = ({
   };
 
   function debugLog(message, rule) {
-    if (!debug) return;
+    if (!debug) {
+      return;
+    }
 
     const source = rule.source?.input?.file || 'unknown source';
-    if (debugFilter && !source.includes(debugFilter)) return;
+    if (debugFilter && !source.includes(debugFilter)) {
+      return;
+    }
 
     stats.sourceFiles.add(source);
     console.log(`[PostCSS Container Plugin] ${message} (${source})`);
   }
 
   const processRule = (rule, { Rule }) => {
-    if (rule[processed]) return;
+    if (rule[processed]) {
+      return;
+    }
+
+    // Check if rule is inside a print-only media query
+    const isInPrintOnly = rule.parent?.type === 'atrule' &&
+      rule.parent?.name === 'media' &&
+      rule.parent.params.includes('print') &&
+      !rule.parent.params.includes('all') &&
+      !rule.parent.params.includes('screen');
+
+    if (isInPrintOnly) {
+      rule[processed] = true;
+      return;
+    }
 
     const declsToCopy = [];
     let hasFixedPosition = false;
 
-    // First pass: check for position: fixed and typography properties
+    // First pass: check for position: fixed
     rule.walkDecls(decl => {
       if (decl.prop === 'position' && decl.value === 'fixed') {
         hasFixedPosition = true;
@@ -153,21 +171,12 @@ const plugin = ({
 
     // Second pass: handle all declarations
     rule.walkDecls(decl => {
-      if (decl[processed]) return;
+      if (decl[processed]) {
+        return;
+      }
 
       let value = decl.value;
-
-      // Handle typography-related properties
-      if (isTypographyProperty(decl.prop)) {
-        value = processTypographyValue(value);
-        if (value !== decl.value) {
-          const clonedDecl = decl.clone({ value });
-          declsToCopy.push(clonedDecl);
-          decl[processed] = true;
-          debugLog(`Converting typography in ${decl.prop}: ${rule.selector}`, rule);
-          return;
-        }
-      }
+      let needsConversion = false;
 
       // Handle position: fixed
       if (hasFixedPosition) {
@@ -180,7 +189,7 @@ const plugin = ({
           return;
         }
 
-        if (['top', 'right', 'bottom', 'left'].includes(decl.prop)) {
+        if ([ 'top', 'right', 'bottom', 'left' ].includes(decl.prop)) {
           const varName = `--container-${decl.prop}`;
           const varDecl = decl.clone({
             prop: varName,
@@ -198,19 +207,36 @@ const plugin = ({
         }
       }
 
-      // Handle calc expressions
+      // Check for viewport units in calc expressions
       if (value.includes('calc(')) {
-        value = parseCalcExpression(value);
+        const containsViewportUnit = Object.keys(units).some(unit => value.includes(unit));
+        if (containsViewportUnit) {
+          value = parseCalcExpression(value);
+          needsConversion = true;
+        }
       }
 
-      // Convert viewport units
+      // Handle typography-related properties
+      if (isTypographyProperty(decl.prop)) {
+        const newValue = processTypographyValue(value);
+        if (newValue !== value) {
+          value = newValue;
+          needsConversion = true;
+        }
+      }
+
+      // Handle direct viewport units
       if (Object.keys(units).some(unit => value.includes(unit))) {
         value = convertUnitsInExpression(value);
+        needsConversion = true;
+      }
+
+      // If we need to convert this declaration, add it to declsToCopy
+      if (needsConversion) {
         const clonedDecl = decl.clone({ value });
         declsToCopy.push(clonedDecl);
         decl[processed] = true;
-
-        // Track which units were converted
+        // Track which units were converted for debugging
         Object.keys(units).forEach(unit => {
           if (decl.value.includes(unit)) {
             stats.viewportUnitsConverted.add(`${unit} in ${decl.prop}`);
@@ -220,9 +246,11 @@ const plugin = ({
       }
     });
 
-    if (declsToCopy.length) {
+    // Create new rule with converted declarations if needed
+    if (declsToCopy.length > 0) {
       stats.rulesProcessed++;
       debugLog(`Processing rule: ${rule.selector}`, rule);
+
       // Add container context rule if we have fixed positioning
       if (hasFixedPosition) {
         const containerContextRule = new Rule({
@@ -256,86 +284,150 @@ const plugin = ({
   };
 
   const processMediaAtRule = (atRule, { AtRule, Rule }) => {
-    if (atRule[processed]) return;
+    if (atRule[processed]) {
+      return;
+    }
 
-    // Skip print-only media queries
-    if (atRule.params.includes('print') &&
+    // Skip print-only media queries entirely
+    const isPrintOnly = atRule.params.includes('print') &&
       !atRule.params.includes('all') &&
-      !atRule.params.includes('screen')) {
+      !atRule.params.includes('screen');
+
+    if (isPrintOnly) {
       atRule[processed] = true;
       return;
     }
 
-    // Convert to container query
-    let containerQuery = typeof transform === 'function'
-      ? transform(atRule.params)
-      : atRule.params.trim();
+    let hasFixedPosition = false;
 
-    // Remove media type if present
-    containerQuery = containerQuery.replace(/(only\s*)?(all|screen|print)(,)?(\s)*(and\s*)?/g, '').trim();
-
-    // Convert using convertMediaFeature
-    containerQuery = convertMediaFeature(containerQuery);
-
-    // Ensure proper container query syntax
-    if (!containerQuery.startsWith('(')) {
-      containerQuery = `(${containerQuery}`;
-    }
-    if (!containerQuery.endsWith(')')) {
-      containerQuery = `${containerQuery})`;
-    }
-
-    const containerAtRule = atRule.clone({
-      name: 'container',
-      params: containerQuery
-    });
-
-    // Ensure container rules have the correct selector prefix
-    containerAtRule.walkRules(rule => {
-      if (!rule.selector.includes(conditionalSelector)) {
-        rule.selector = `${conditionalSelector} ${rule.selector}`;
-      }
-    });
-
-    // Process declarations within container query
-    containerAtRule.walkDecls(decl => {
-      if (decl[processed]) return;
-
-      let value = decl.value;
-
-      if (value.includes('calc(')) {
-        value = parseCalcExpression(value);
-      }
-
-      if (Object.keys(units).some(unit => value.includes(unit))) {
-        decl.value = convertUnitsInExpression(value);
-      }
-
-      decl[processed] = true;
-    });
-
-    // Handle original media query for non-container elements
+    // Check if any rules in this media query use fixed positioning
     atRule.walkRules(rule => {
-      if (rule[processed]) return;
+      rule.walkDecls(decl => {
+        if (decl.prop === 'position' && decl.value === 'fixed') {
+          hasFixedPosition = true;
+        }
+      });
+    });
 
-      const newRule = rule.clone({
-        selectors: rule.selectors.map(selector => {
-          if (selector.startsWith(containerEl)) {
-            return selector.replace(containerEl, conditionalNotSelector);
+    // Add container context rule if needed
+    if (hasFixedPosition) {
+      const containerContextRule = new Rule({
+        selector: conditionalSelector,
+        nodes: [
+          {
+            prop: 'position',
+            value: 'relative'
+          },
+          {
+            prop: 'contain',
+            value: 'layout'
           }
-          return `${conditionalNotSelector} ${selector}`;
-        })
+        ]
+      });
+      atRule.parent.insertBefore(atRule, containerContextRule);
+    }
+
+    // Split media query list into individual queries
+    const mediaQueries = atRule.params.split(',').map(q => q.trim());
+
+    // Only convert screen/all media queries to container queries
+    const screenQueries = mediaQueries.filter(query =>
+      !query.includes('print') &&
+      (query.includes('screen') || query.includes('all') || !/(all|screen|print)/.test(query))
+    );
+
+    if (screenQueries.length > 0) {
+      const containerQueries = screenQueries.map(query => {
+        let containerQuery = typeof transform === 'function'
+          ? transform(query)
+          : query;
+
+        containerQuery = containerQuery.replace(/(only\s*)?(all|screen|print)(,)?(\s)*(and\s*)?/g, '').trim();
+        containerQuery = convertMediaFeature(containerQuery);
+
+        if (!containerQuery.startsWith('(')) {
+          containerQuery = `(${containerQuery}`;
+        }
+        if (!containerQuery.endsWith(')')) {
+          containerQuery = `${containerQuery})`;
+        }
+
+        return containerQuery;
       });
 
-      rule.replaceWith(newRule);
-      rule[processed] = true;
-      newRule[processed] = true;
-    });
+      const containerAtRule = atRule.clone({
+        name: 'container',
+        params: containerQueries.join(', ')
+      });
 
-    atRule.parent.insertAfter(atRule, containerAtRule);
+      // Process rules within container query
+      containerAtRule.walkRules(rule => {
+        if (rule[processed]) {
+          return;
+        }
+
+        // Handle fixed positioning
+        rule.walkDecls(decl => {
+          if (decl.prop === 'position' && decl.value === 'fixed') {
+            decl.value = 'sticky';
+          }
+          if ([ 'top', 'right', 'bottom', 'left' ].includes(decl.prop)) {
+            const varName = `--container-${decl.prop}`;
+            rule.insertBefore(decl, {
+              prop: varName,
+              value: decl.value
+            });
+            decl.value = `var(${varName})`;
+          }
+        });
+
+        // Process other declarations
+        rule.walkDecls(decl => {
+          if (decl[processed]) {
+            return;
+          }
+
+          let value = decl.value;
+          if (value.includes('calc(')) {
+            value = parseCalcExpression(value);
+          }
+          if (Object.keys(units).some(unit => value.includes(unit))) {
+            decl.value = convertUnitsInExpression(value);
+          }
+          decl[processed] = true;
+        });
+
+        rule[processed] = true;
+      });
+
+      atRule.parent.insertAfter(atRule, containerAtRule);
+      stats.mediaQueriesProcessed++;
+      debugLog(`Converting media query: ${atRule.params}`, atRule);
+    }
+
+    // Handle original media query rules
+    if (!isPrintOnly) {
+      atRule.walkRules(rule => {
+        if (rule[processed]) {
+          return;
+        }
+
+        const newRule = rule.clone({
+          selectors: rule.selectors.map(selector => {
+            if (selector.startsWith(containerEl)) {
+              return selector.replace(containerEl, conditionalNotSelector);
+            }
+            return `${conditionalNotSelector} ${selector}`;
+          })
+        });
+
+        rule.replaceWith(newRule);
+        rule[processed] = true;
+        newRule[processed] = true;
+      });
+    }
+
     atRule[processed] = true;
-    stats.mediaQueriesProcessed++;
-    debugLog(`Converting media query: ${atRule.params}`, atRule);
   };
 
   return {
