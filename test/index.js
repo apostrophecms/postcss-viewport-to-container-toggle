@@ -93,6 +93,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   font-size: 2vw;
 }
 :where(body[data-breakpoint-preview-mode]) .foo {
+  color: red;
   font-size: 2cqw;
 }`.trim();
 
@@ -178,6 +179,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   --container-left: 0;
   left: var(--container-left);
   width: 100cqw;
+  height: 60px;
 }`.trim();
 
       await run(plugin, input, output, opts);
@@ -257,7 +259,101 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 }
 :where(body[data-breakpoint-preview-mode]) .complex {
   margin: calc(10px + 2cqw - 1cqh);
-  padding: calc((100cqw - 20px) / 2 + 1cqi);
+  padding: calc((100cqw - 20px) / 2 + 1cqmin);
+}`.trim();
+
+      await run(plugin, input, output, opts);
+    });
+  });
+
+  // Simple media queries
+  describe('simple media query conversions', () => {
+    it('should handle `<=` operator media queries', async () => {
+      const input = `
+@media (width <= 1024px) {
+  .single-operator {
+    width: 100vw;
+  }
+}`;
+      const output = `
+@media (width <= 1024px) {
+  :where(body:not([data-breakpoint-preview-mode])) .single-operator {
+    width: 100vw;
+  }
+}
+@container (max-width: 1024px) {
+  .single-operator {
+    width: 100cqw;
+  }
+}`.trim();
+
+      await run(plugin, input, output, opts);
+    });
+
+    it('should handle `>=` operator media queries', async () => {
+      const input = `
+@media (width >= 240px) {
+  .single-operator {
+    width: 100vw;
+  }
+}`;
+      const output = `
+@media (width >= 240px) {
+  :where(body:not([data-breakpoint-preview-mode])) .single-operator {
+    width: 100vw;
+  }
+}
+@container (min-width: 240px) {
+  .single-operator {
+    width: 100cqw;
+  }
+}`.trim();
+
+      await run(plugin, input, output, opts);
+    });
+
+    it('should handle poorly formatted media queries', async () => {
+      const input = `
+@media (width<=1024px) {
+  .poorly-formatted {
+    width: 100vw;
+  }
+}`;
+      const output = `
+@media (width<=1024px) {
+  :where(body:not([data-breakpoint-preview-mode])) .poorly-formatted {
+    width: 100vw;
+  }
+}
+@container (max-width: 1024px) {
+  .poorly-formatted {
+    width: 100cqw;
+  }
+}`.trim();
+
+      await run(plugin, input, output, opts);
+    });
+
+    it('should handle media queries with combined range and logical operators', async () => {
+      const input = `
+@media (min-width: 500px) and (width<=1024px) {
+  .combined-operator {
+    width: 90vw;
+    margin: 0 5vw;
+  }
+}`;
+      const output = `
+@media (min-width: 500px) and (width<=1024px) {
+  :where(body:not([data-breakpoint-preview-mode])) .combined-operator {
+    width: 90vw;
+    margin: 0 5vw;
+  }
+}
+@container (min-width: 500px) and (max-width: 1024px) {
+  .combined-operator {
+    width: 90cqw;
+    margin: 0 5cqw;
+  }
 }`.trim();
 
       await run(plugin, input, output, opts);
