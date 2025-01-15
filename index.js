@@ -31,6 +31,11 @@ const plugin = (opts = {}) => {
   };
   const { containerEl, modifierAttr } = options;
 
+  const getParseOptions = (result) => ({
+    from: result.opts.from,
+    ...opts
+  });
+
   // Create utility instances
   const unitConverter = createUnitConverter({ units: options.units });
   const debugUtils = createDebugUtils(options);
@@ -94,10 +99,14 @@ const plugin = (opts = {}) => {
     postcssPlugin: 'postcss-viewport-to-container-toggle',
 
     Once(root, helpers) {
-      addContainerContextIfNeeded(root, helpers);
+      const parseOptions = getParseOptions(helpers.result);
+      addContainerContextIfNeeded(root, {
+        Rule: helpers.Rule,
+        parseOptions
+      });
     },
 
-    Rule(rule, { Rule }) {
+    Rule(rule, { result }) {
       if (rule[processed]) {
         return; // Skip already processed rules
       }
@@ -123,7 +132,9 @@ const plugin = (opts = {}) => {
         rule[processed] = true;
 
         // Create container version with converted units
-        const containerRule = rule.clone();
+        const containerRule = rule.clone({
+          from: result.opts.from
+        });
         containerRule.selector = `${conditionalSelector} ${rule.selector}`;
         ruleProcessor.processDeclarations(containerRule, { isContainer: true });
 
@@ -135,7 +146,7 @@ const plugin = (opts = {}) => {
     },
 
     AtRule: {
-      media(atRule, { AtRule }) {
+      media(atRule, { AtRule, result }) {
         if (atRule[processed]) {
           return;
         }
@@ -177,12 +188,16 @@ const plugin = (opts = {}) => {
           if (containerConditions.length > 0) {
             const containerQuery = new AtRule({
               name: 'container',
-              params: containerConditions[0]
+              params: containerConditions[0],
+              source: atRule.source,
+              from: result.opts.from
             });
 
             // Create container versions of all rules
             atRule.walkRules(rule => {
-              const containerRule = rule.clone();
+              const containerRule = rule.clone({
+                from: result.opts.from
+              });
               containerRule.selector = rule.selector.replace(conditionalNotSelector, '').trim();
               ruleProcessor.processDeclarations(containerRule, { isContainer: true });
 

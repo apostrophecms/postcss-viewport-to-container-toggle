@@ -48,10 +48,16 @@ const createMediaProcessor = ({ unitConverter, transform }) => {
     const convertedConditions = conditions.map(cond => {
       // Full range: (100px <= width <= 200px) or (100px < width < 200px)
       const fullRangeMatch = cond.match(
-        /(\d+[a-z%]*)\s*([<>]=?)\s*([a-z-]+)\s*([<>]=?)\s*(\d+[a-z%]*)/
+        /(?<min>\d+[a-z%]*)\s*(?<minOp>[<>]=?)\s*(?<property>[a-z-]+)\s*(?<maxOp>[<>]=?)\s*(?<max>\d+[a-z%]*)/
       );
       if (fullRangeMatch) {
-        const [ , min, minOp, property, maxOp, max ] = fullRangeMatch;
+        const {
+          min,
+          minOp,
+          property,
+          maxOp,
+          max
+        } = fullRangeMatch.groups;
         const minCondition = convertComparison(min, property, minOp === '<=' ? '>=' : minOp === '>=' ? '<=' : minOp === '<' ? '>' : '<');
         const maxCondition = convertComparison(max, property, maxOp);
         return `${minCondition}) and (${maxCondition}`;
@@ -59,15 +65,22 @@ const createMediaProcessor = ({ unitConverter, transform }) => {
 
       // Single comparison: (width >= 100px) or (width < 200px)
       const singleComparisonMatch = cond.match(
-        /([a-z-]+)\s*([<>]=?)\s*(\d+[a-z%]*)/
+        /(?<property>[a-z-]+)\s*(?<operator>[<>]=?)\s*(?<value>\d+[a-z%]*)/
       ) || cond.match(
-        /(\d+[a-z%]*)\s*([<>]=?)\s*([a-z-]+)/
+        /(?<value>\d+[a-z%]*)\s*(?<operator>[<>]=?)\s*(?<property>[a-z-]+)/
       );
+
       if (singleComparisonMatch) {
-        let [ , first, operator, second ] = singleComparisonMatch;
-        // If the number comes first, swap the comparison
-        if (/^\d/.test(first)) {
-          [ first, second ] = [ second, first ];
+        let {
+          property,
+          operator,
+          value
+        } = singleComparisonMatch.groups;
+
+        // If the number comes first (we matched the second pattern)
+        if (/^\d/.test(property)) {
+          // Swap property and value
+          [ property, value ] = [ value, property ];
 
           // Map the operator to its inverse
           const operatorMap = {
@@ -79,7 +92,7 @@ const createMediaProcessor = ({ unitConverter, transform }) => {
 
           operator = operatorMap[operator] || operator;
         }
-        return `(${convertComparison(second, first, operator)})`;
+        return `(${convertComparison(value, property, operator)})`;
       }
 
       // Handle standard media feature formats with colon
