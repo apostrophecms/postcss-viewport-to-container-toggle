@@ -227,33 +227,9 @@ const createMediaProcessor = ({ unitConverter, transform }) => {
     return [ containerQuery.trim() ];
   };
 
-  /**
-   * Processes a media query rule, returning both viewport and container query versions.
-   *
-   * @param {Object} rule - The PostCSS `@media` rule to process.
-   * @returns {Object} An object with `viewportRule` and `containerRule`.
-   */
-  const processMediaRule = (rule) => {
-    const viewportRule = rule.clone();
-    const containerRule = rule.clone();
-
-    // Convert units in container version
-    containerRule.walkDecls(decl => {
-      if (Object.keys(unitConverter.units).some(unit => decl.value.includes(unit))) {
-        decl.value = unitConverter.convertUnitsInExpression(decl.value);
-      }
-    });
-
-    return {
-      viewportRule,
-      containerRule
-    };
-  };
-
   return {
     getMediaConditions,
-    convertToContainerConditions,
-    processMediaRule
+    convertToContainerConditions
   };
 };
 

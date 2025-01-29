@@ -1,38 +1,47 @@
 const postcss = require('postcss');
+const cssnano = require('cssnano');
 const { equal, deepEqual } = require('node:assert');
 const plugin = require('../index.js');
 const opts = { modifierAttr: 'data-breakpoint-preview-mode' };
 
+let currentFileName = '';
+
+// Hook into Mocha's test context
+beforeEach(function() {
+  currentFileName = this.currentTest.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+});
+
+async function formatCSS(css) {
+  const result = await postcss([ cssnano({ preset: 'default' }) ])
+    .process(css, {
+      from: `${currentFileName}_formatted.css`
+    });
+  return result.css.trim();
+}
+
 // Enhanced run helper with detailed output on failure
 async function run(plugin, input, output, opts = {}) {
-  const result = await postcss([ plugin(opts) ]).process(input, { from: undefined });
+  const result = await postcss([ plugin(opts) ])
+    .process(input, {
+      from: `${currentFileName}.css`
+    });
+
   try {
-    // Normalize whitespace before comparison (helps avoid newline mismatches)
-    const normalizedResult = result.css.trim().replace(/\n\s*\n/g, '\n');
-    const normalizedOutput = output.trim().replace(/\n\s*\n/g, '\n');
-    equal(normalizedResult, normalizedOutput);
+    // Normalize both expected and actual CSS before comparison
+    const formattedResult = await formatCSS(result.css);
+    const formattedOutput = await formatCSS(output);
+
+    equal(formattedResult, formattedOutput);
     deepEqual(result.warnings(), []);
   } catch (error) {
     console.log('\n=== Test Failed ===');
     console.log('Input:');
     console.log(input);
-    console.log('\nExpected Output:');
-    console.log(output);
-    console.log('\nActual Output:');
-    console.log(result.css);
-    console.log('\nDifference Visualization:');
-    const expectedLines = output.trim().split('\n');
-    const actualLines = result.css.trim().split('\n');
-    const maxLines = Math.max(expectedLines.length, actualLines.length);
-    for (let i = 0; i < maxLines; i++) {
-      const expected = expectedLines[i] || '';
-      const actual = actualLines[i] || '';
-      if (expected !== actual) {
-        console.log(`Line ${i + 1}:`);
-        console.log(`  Expected: "${expected}"`);
-        console.log(`  Actual:   "${actual}"`);
-      }
-    }
+    console.log('\nExpected Output (Formatted):');
+    console.log(await formatCSS(output));
+    console.log('\nActual Output (Formatted):');
+    console.log(await formatCSS(result.css));
+
     throw error;
   }
 }
@@ -53,7 +62,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   line-height: calc(1.5 + 1vh);
   letter-spacing: 0.5vmin;
 }
-:where(body[data-breakpoint-preview-mode]) .text {
+body[data-breakpoint-preview-mode] .text {
   font-size: calc(16px + 2cqw);
   line-height: calc(1.5 + 1cqh);
   letter-spacing: 0.5cqi;
@@ -73,7 +82,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   font-size: clamp(1rem, 2vw + 1rem, 3rem);
   line-height: clamp(1.2, calc(1 + 2vh), 1.8);
 }
-:where(body[data-breakpoint-preview-mode]) .fluid-text {
+body[data-breakpoint-preview-mode] .fluid-text {
   font-size: clamp(1rem, 1rem + 2cqw, 3rem);
   line-height: clamp(1.2, calc(1 + 2cqh), 1.8);
 }`.trim();
@@ -92,7 +101,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   color: red;
   font-size: 2vw;
 }
-:where(body[data-breakpoint-preview-mode]) .foo {
+body[data-breakpoint-preview-mode] .foo {
   color: red;
   font-size: 2cqw;
 }`.trim();
@@ -109,7 +118,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 .decimals {
   font-size: 2.75vw;
 }
-:where(body[data-breakpoint-preview-mode]) .decimals {
+body[data-breakpoint-preview-mode] .decimals {
   font-size: 2.75cqw;
 }`.trim();
 
@@ -125,7 +134,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 .zero-test {
   font-size: 0vw;
 }
-:where(body[data-breakpoint-preview-mode]) .zero-test {
+body[data-breakpoint-preview-mode] .zero-test {
   font-size: 0cqw;
 }`.trim();
 
@@ -141,7 +150,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 .nested-calc {
   font-size: clamp(1rem, calc(50vw - 2rem), calc(100vh - 4rem));
 }
-:where(body[data-breakpoint-preview-mode]) .nested-calc {
+body[data-breakpoint-preview-mode] .nested-calc {
   font-size: clamp(1rem, calc(50cqw - 2rem), calc(100cqh - 4rem));
 }`.trim();
 
@@ -161,7 +170,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   height: 60px;
 }`;
       const output = `
-:where(body[data-breakpoint-preview-mode]) {
+body[data-breakpoint-preview-mode] {
   position: relative;
   contain: layout;
 }
@@ -172,7 +181,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   width: 100vw;
   height: 60px;
 }
-:where(body[data-breakpoint-preview-mode]) .fixed-header {
+body[data-breakpoint-preview-mode] .fixed-header {
   position: sticky;
   --container-top: 0;
   top: var(--container-top);
@@ -195,12 +204,12 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   }
 }`;
       const output = `
-:where(body[data-breakpoint-preview-mode]) {
+body[data-breakpoint-preview-mode] {
   position: relative;
   contain: layout;
 }
 @media (min-width: 768px) {
-  :where(body:not([data-breakpoint-preview-mode])) .fixed-in-media {
+  body:not([data-breakpoint-preview-mode]) .fixed-in-media {
     position: fixed;
     top: 0;
     width: 100vw;
@@ -236,7 +245,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   min-height: 100svh;
   max-width: 100lvw;
 }
-:where(body[data-breakpoint-preview-mode]) .dynamic {
+body[data-breakpoint-preview-mode] .dynamic {
   height: 100cqh;
   width: 100cqw;
   min-height: 100cqh;
@@ -257,7 +266,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   margin: calc(10px + 2vw - 1vh);
   padding: calc((100vw - 20px) / 2 + 1vmin);
 }
-:where(body[data-breakpoint-preview-mode]) .complex {
+body[data-breakpoint-preview-mode] .complex {
   margin: calc(10px + 2cqw - 1cqh);
   padding: calc((100cqw - 20px) / 2 + 1cqmin);
 }`.trim();
@@ -277,7 +286,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 }`;
       const output = `
 @media (width <= 1024px) {
-  :where(body:not([data-breakpoint-preview-mode])) .single-operator {
+  body:not([data-breakpoint-preview-mode]) .single-operator {
     width: 100vw;
   }
 }
@@ -299,7 +308,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 }`;
       const output = `
 @media (width >= 240px) {
-  :where(body:not([data-breakpoint-preview-mode])) .single-operator {
+  body:not([data-breakpoint-preview-mode]) .single-operator {
     width: 100vw;
   }
 }
@@ -321,7 +330,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 }`;
       const output = `
 @media (width<=1024px) {
-  :where(body:not([data-breakpoint-preview-mode])) .poorly-formatted {
+  body:not([data-breakpoint-preview-mode]) .poorly-formatted {
     width: 100vw;
   }
 }
@@ -344,7 +353,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 }`;
       const output = `
 @media (min-width: 500px) and (width<=1024px) {
-  :where(body:not([data-breakpoint-preview-mode])) .combined-operator {
+  body:not([data-breakpoint-preview-mode]) .combined-operator {
     width: 90vw;
     margin: 0 5vw;
   }
@@ -372,7 +381,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 }`;
       const output = `
 @media (240px <= width <= 1024px) {
-  :where(body:not([data-breakpoint-preview-mode])) .range {
+  body:not([data-breakpoint-preview-mode]) .range {
     width: 90vw;
     margin: 0 5vw;
   }
@@ -396,7 +405,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 }`;
       const output = `
 @media screen and (min-width: 768px), print {
-  :where(body:not([data-breakpoint-preview-mode])) .mixed {
+  body:not([data-breakpoint-preview-mode]) .mixed {
     width: 80vw;
   }
 }
@@ -419,7 +428,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 }`;
       const output = `
 @media (orientation: landscape) and (min-width: 768px) {
-  :where(body:not([data-breakpoint-preview-mode])) .landscape {
+  body:not([data-breakpoint-preview-mode]) .landscape {
     height: 100vh;
     width: 100vw;
   }
@@ -444,16 +453,20 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 }`;
       const output = `
 @media (min-width: 320px) {
-  :where(body:not([data-breakpoint-preview-mode])) .mobile { width: 90vw; }
+  body:not([data-breakpoint-preview-mode]) .mobile { width: 90vw; }
 }
 @container (min-width: 320px) {
-  .mobile { width: 90cqw; }
+  .mobile {
+    width: 90cqw;
+  }
 }
 @media (min-width: 768px) {
-  :where(body:not([data-breakpoint-preview-mode])) .tablet { width: 80vw; }
+  body:not([data-breakpoint-preview-mode]) .tablet { width: 80vw; }
 }
 @container (min-width: 768px) {
-  .tablet { width: 80cqw; }
+  .tablet {
+    width: 80cqw;
+  }
 }`.trim();
 
       await run(plugin, input, output, opts);
@@ -474,7 +487,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
       const output = `
 @media screen {
   @media (min-width: 768px) {
-    :where(body:not([data-breakpoint-preview-mode])) .nested {
+    body:not([data-breakpoint-preview-mode]) .nested {
       width: 80vw;
     }
   }
@@ -526,7 +539,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 }`;
       const output = `
 @media (min-width: 500px) {
-  :where(body:not([data-breakpoint-preview-mode])) .transformed {
+  body:not([data-breakpoint-preview-mode]) .transformed {
     width: 50vw;
   }
 }
@@ -553,7 +566,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
       const input = '.debug { width: 100vw; }';
       const output = `
 .debug { width: 100vw; }
-:where(body[data-breakpoint-preview-mode]) .debug { width: 100cqw; }`.trim();
+body[data-breakpoint-preview-mode] .debug { width: 100cqw; }`.trim();
 
       await run(plugin, input, output, debugOpts);
     });

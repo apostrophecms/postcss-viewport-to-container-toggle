@@ -23,6 +23,13 @@ const createMediaProcessor = require('./src/utils/mediaProcessor');
 const createRuleProcessor = require('./src/utils/ruleProcessor');
 const createDebugUtils = require('./src/utils/debug');
 
+const addConditionalToSelectors = (selector, conditionalNotSelector) => {
+  return selector
+    .split(',')
+    .map(part => `${conditionalNotSelector} ${part.trim()}`)
+    .join(',\n  ');
+};
+
 const plugin = (opts = {}) => {
   // Merge options with defaults
   const options = {
@@ -30,11 +37,6 @@ const plugin = (opts = {}) => {
     ...opts
   };
   const { containerEl, modifierAttr } = options;
-
-  const getParseOptions = (result) => ({
-    from: result.opts.from,
-    ...opts
-  });
 
   // Create utility instances
   const unitConverter = createUnitConverter({ units: options.units });
@@ -49,8 +51,8 @@ const plugin = (opts = {}) => {
   });
 
   // Create selectors
-  const conditionalSelector = `:where(${containerEl}[${modifierAttr}])`;
-  const conditionalNotSelector = `:where(${containerEl}:not([${modifierAttr}]))`;
+  const conditionalSelector = `${containerEl}[${modifierAttr}]`;
+  const conditionalNotSelector = `${containerEl}:not([${modifierAttr}])`;
 
   // Track processed nodes to avoid duplicates
   const processed = Symbol('processed');
@@ -64,7 +66,7 @@ const plugin = (opts = {}) => {
  * @param {Object} root - The PostCSS root node.
  * @param {Object} helpers - PostCSS helpers, including the `Rule` constructor.
  */
-  const addContainerContextIfNeeded = (root, { Rule }) => {
+  const addContainerContextIfNeeded = (root, helpers) => {
     if (hasAddedContainerContext) {
       return;
     }
@@ -78,19 +80,24 @@ const plugin = (opts = {}) => {
 
     if (needsContainerContext) {
       debugUtils.stats.fixedPositionsConverted++;
-      root.prepend(new Rule({
+      const contextRule = new helpers.Rule({
         selector: conditionalSelector,
-        nodes: [
-          {
-            prop: 'position',
-            value: 'relative'
-          },
-          {
-            prop: 'contain',
-            value: 'layout'
-          }
-        ]
-      }));
+        source: root.source,
+        from: helpers.result.opts.from
+      });
+      contextRule.append({
+        prop: 'position',
+        value: 'relative',
+        source: root.source,
+        from: helpers.result.opts.from
+      });
+      contextRule.append({
+        prop: 'contain',
+        value: 'layout',
+        source: root.source,
+        from: helpers.result.opts.from
+      });
+      root.prepend(contextRule);
       hasAddedContainerContext = true;
     }
   };
@@ -99,27 +106,17 @@ const plugin = (opts = {}) => {
     postcssPlugin: 'postcss-viewport-to-container-toggle',
 
     Once(root, helpers) {
-      const parseOptions = getParseOptions(helpers.result);
-      addContainerContextIfNeeded(root, {
-        Rule: helpers.Rule,
-        parseOptions
-      });
+      addContainerContextIfNeeded(root, helpers);
     },
 
-    Rule(rule, { result }) {
+    Rule(rule, helpers) {
+      // Skip already processed rules
       if (rule[processed]) {
-        return; // Skip already processed rules
+        return;
       }
 
-      // Skip rules in print-only media queries
-      const isInPrintOnly = rule.parent?.type === 'atrule' &&
-        rule.parent?.name === 'media' &&
-        rule.parent.params.includes('print') &&
-        !rule.parent.params.includes('all') &&
-        !rule.parent.params.includes('screen');
-
-      if (isInPrintOnly) {
-        rule[processed] = true;
+      // Skip rules inside media queries - these will be handled by AtRule
+      if (rule.parent?.type === 'atrule' && rule.parent?.name === 'media') {
         return;
       }
 
@@ -133,10 +130,14 @@ const plugin = (opts = {}) => {
 
         // Create container version with converted units
         const containerRule = rule.clone({
-          from: result.opts.from
+          source: rule.source,
+          from: helpers.result.opts.from
         });
         containerRule.selector = `${conditionalSelector} ${rule.selector}`;
-        ruleProcessor.processDeclarations(containerRule, { isContainer: true });
+        ruleProcessor.processDeclarations(containerRule, {
+          isContainer: true,
+          from: helpers.result.opts.from
+        });
 
         // Add container rule after original
         rule.after('\n' + containerRule);
@@ -146,78 +147,83 @@ const plugin = (opts = {}) => {
     },
 
     AtRule: {
-      media(atRule, { AtRule, result }) {
+      media(atRule, helpers) {
         if (atRule[processed]) {
           return;
         }
 
-        // Special handling for nested media queries - only update selectors
-        if (atRule.parent?.type === 'atrule' && atRule.parent?.name === 'media') {
-          atRule.walkRules(rule => {
-            if (rule[processed]) {
-              return;
-            }
-            // Only update selector for viewport version
-            rule.selector = `${conditionalNotSelector} ${rule.selector}`;
-            rule[processed] = true;
-          });
+        let hasNotSelector = false;
+        atRule.walkRules(rule => {
+          if (rule.selector.includes(conditionalNotSelector)) {
+            hasNotSelector = true;
+          }
+        });
+
+        if (hasNotSelector) {
+          atRule[processed] = true;
           return;
         }
 
-        // Process media query
         const conditions = mediaProcessor.getMediaConditions(atRule);
         if (conditions.length > 0) {
           debugUtils.stats.mediaQueriesProcessed++;
-          debugUtils.log(`Converting media query: ${atRule.params}`, atRule);
 
-          // Keep original media query but modify rules inside it
-          atRule.walkRules(rule => {
-            if (rule[processed]) {
-              return;
-            }
-
-            // Update selector for viewport version
-            rule.selector = `${conditionalNotSelector} ${rule.selector}`;
-            rule[processed] = true;
-          });
-
-          // Create container query version
-          const containerConditions = mediaProcessor.convertToContainerConditions(
-            conditions
-          );
+          // Create container version first
+          const containerConditions =
+            mediaProcessor.convertToContainerConditions(conditions);
           if (containerConditions.length > 0) {
-            const containerQuery = new AtRule({
+            const containerQuery = new helpers.AtRule({
               name: 'container',
               params: containerConditions[0],
               source: atRule.source,
-              from: result.opts.from
+              from: helpers.result.opts.from
             });
 
-            // Create container versions of all rules
+            // Clone and process rules for container query - keep selectors clean
             atRule.walkRules(rule => {
               const containerRule = rule.clone({
-                from: result.opts.from
+                source: rule.source,
+                from: helpers.result.opts.from
               });
-              containerRule.selector = rule.selector.replace(conditionalNotSelector, '').trim();
-              ruleProcessor.processDeclarations(containerRule, { isContainer: true });
 
-              if (rule.parent?.parent?.type === 'atrule' && rule.parent?.parent?.name === 'media') {
-                containerRule.raws.before = '\n  ';
-                containerRule.raws.after = '\n  ';
+              ruleProcessor.processDeclarations(containerRule, {
+                isContainer: true,
+                from: helpers.result.opts.from
+              });
 
-                // Set the raws.before property for each declaration within the rule
-                containerRule.walkDecls(decl => {
-                  decl.raws.before = '\n    ';
-                });
-              }
+              containerRule.raws.before = '\n  ';
+              containerRule.raws.after = '\n  ';
+              containerRule.walkDecls(decl => {
+                decl.raws.before = '\n    ';
+              });
+
               containerQuery.append(containerRule);
             });
 
-            // Add container query after the media query
+            // Add container query
             atRule.after(containerQuery);
           }
+
+          // Now handle viewport media query modifications
+          // We want the original media query to get the not selector
+          atRule.walkRules(rule => {
+            // Skip if already modified with not selector
+            if (rule.selector.includes(conditionalNotSelector)) {
+              return;
+            }
+
+            const viewportRule = rule.clone({
+              source: rule.source,
+              from: helpers.result.opts.from
+            });
+
+            viewportRule.selector =
+              addConditionalToSelectors(rule.selector, conditionalNotSelector);
+            rule.replaceWith(viewportRule);
+          });
         }
 
+        // Only mark the atRule as processed after all transformations
         atRule[processed] = true;
       }
     },

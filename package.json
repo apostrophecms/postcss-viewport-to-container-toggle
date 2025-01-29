@@ -11,6 +11,7 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "devDependencies": {
+    "cssnano": "^7.0.6",
     "eslint": "^8.57.1",
     "eslint-config-apostrophe": "^4.3.0",
     "mocha": "^10.7.3",

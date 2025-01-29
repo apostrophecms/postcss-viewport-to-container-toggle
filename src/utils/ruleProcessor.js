@@ -3,14 +3,14 @@
  * and fixed position handling.
  *
  * @param {Object} options - Configuration options for the rule processor.
- * @param {Object} options.unitConverter - Handles unit conversions for
- * viewport and typography units.
+ * @param {Object} options.unitConverter - Handles unit conversions
+ * for viewport and typography units.
  * @param {Object} options.debug - Debug utilities for logging and tracking processing.
  * @returns {Object} An object containing methods to process and check CSS rules.
  */
 const createRuleProcessor = ({ unitConverter, debug }) => {
-
   const { units } = unitConverter;
+
   /**
    * Checks if a CSS rule requires processing.
    *
@@ -53,12 +53,13 @@ const createRuleProcessor = ({ unitConverter, debug }) => {
    *
    * @param {Object} rule - The PostCSS rule to process.
    * @param {Object} [options={}] - Additional processing options.
-   * @param {boolean} [options.isContainer=false] - Indicates if the rule is
-   * being processed as part of a container query.
-   * @returns {Object} An object containing a flag indicating if the rule
-   * had a fixed position.
+   * @param {boolean} [options.isContainer=false] - Indicates if the rule
+   * is being processed as part of a container query.
+   * @param {string} [options.from] - Source file path for PostCSS processing.
+   * @returns {Object} An object containing a flag indicating
+   * if the rule had a fixed position.
    */
-  const processDeclarations = (rule, { isContainer = false } = {}) => {
+  const processDeclarations = (rule, { isContainer = false, from } = {}) => {
     let hasFixedPosition = false;
 
     // First pass: check for fixed position
@@ -76,11 +77,13 @@ const createRuleProcessor = ({ unitConverter, debug }) => {
       // For fixed position elements, we need to handle position-related props first
       [ 'top', 'right', 'bottom', 'left' ].forEach(prop => {
         rule.walkDecls(prop, decl => {
-          // Add the CSS custom property declaration
+          // Add the CSS custom property declaration with proper source tracking
           const varName = `--container-${prop}`;
           rule.insertBefore(decl, {
             prop: varName,
-            value: decl.value
+            value: decl.value,
+            source: decl.source,
+            from
           });
           // Update the original declaration to use the variable
           decl.value = `var(${varName})`;
@@ -113,7 +116,13 @@ const createRuleProcessor = ({ unitConverter, debug }) => {
       }
 
       if (needsConversion) {
-        decl.value = value;
+        // Create a new declaration with proper source tracking
+        const newDecl = decl.clone({
+          value,
+          source: decl.source,
+          from
+        });
+        decl.replaceWith(newDecl);
       }
     });
 
