@@ -443,6 +443,31 @@ body[data-breakpoint-preview-mode] .complex {
       await run(plugin, input, output, opts);
     });
 
+    it('should handle orientation alone in media queries', async () => {
+      const input = `
+@media (orientation: landscape) {
+  .landscape {
+    height: 100vh;
+    width: 100vw;
+  }
+}`;
+      const output = `
+@media (orientation: landscape) {
+  body:not([data-breakpoint-preview-mode]) .landscape {
+    height: 100vh;
+    width: 100vw;
+  }
+}
+@container (orientation: landscape) {
+  .landscape {
+    height: 100cqh;
+    width: 100cqw;
+  }
+}`.trim();
+
+      await run(plugin, input, output, opts);
+    });
+
     it('should handle multiple consecutive media queries', async () => {
       const input = `
 @media (min-width: 320px) {

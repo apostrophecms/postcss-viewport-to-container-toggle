@@ -133,7 +133,7 @@ const createMediaProcessor = ({ unitConverter, transform }) => {
    * @returns {boolean} Returns true if the condition includes query-related properties.
    */
   const hasQueryConditions = (condition) => {
-    return /min-|max-|width|height/.test(condition);
+    return /min-|max-|width|height|orientation/.test(condition);
   };
 
   /**
