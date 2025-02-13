@@ -44,7 +44,7 @@ const createDebugUtils = ({ debug, debugFilter }) => {
     }
 
     stats.sourceFiles.add(source);
-    console.log(`[PostCSS Container Plugin] ${message} (${source})`);
+    console.log(`[PostCSS Viewport to Container Toggle Plugin] ${message} (${source})`);
   };
 
   const printSummary = () => {
@@ -52,7 +52,7 @@ const createDebugUtils = ({ debug, debugFilter }) => {
       return;
     }
 
-    console.log('\n[PostCSS Container Plugin] Processing Summary:');
+    console.log('\n[PostCSS Viewport to Container Toggle Plugin] Processing Summary:');
     console.log('----------------------------------------');
     console.log('Rules processed:', stats.rulesProcessed);
     console.log('Media queries processed:', stats.mediaQueriesProcessed);

@@ -6,7 +6,7 @@
 
 * Expands handling and conversion of more media queries and units
 
-## UNRELEASED (initial release, never updated)
+## 1.0.0 (2024-11-07)
 
 ### Adds
 

@@ -5,10 +5,9 @@
  * @param {Object} options - Configuration options for the rule processor.
  * @param {Object} options.unitConverter - Handles unit conversions
  * for viewport and typography units.
- * @param {Object} options.debug - Debug utilities for logging and tracking processing.
  * @returns {Object} An object containing methods to process and check CSS rules.
  */
-const createRuleProcessor = ({ unitConverter, debug }) => {
+const createRuleProcessor = ({ unitConverter }) => {
   const { units } = unitConverter;
 
   /**
@@ -22,23 +21,21 @@ const createRuleProcessor = ({ unitConverter, debug }) => {
    * @returns {boolean} Returns true if the rule needs processing, otherwise false.
    */
   const needsProcessing = (rule) => {
+    // Check for fixed position or viewport units
     let needsConversion = false;
 
-    // Check for fixed position
-    rule.walkDecls('position', decl => {
-      if (decl.value === 'fixed') {
+    rule.walkDecls(decl => {
+      // Check for fixed position
+      if (decl.prop === 'position' && decl.value === 'fixed') {
+        needsConversion = true;
+      // eslint-disable-next-line brace-style
+      }
+
+      // Check for viewport units
+      else if (Object.keys(units).some(unit => decl.value.includes(unit))) {
         needsConversion = true;
       }
     });
-
-    // Check for viewport units
-    if (!needsConversion) {
-      rule.walkDecls(decl => {
-        if (Object.keys(units).some(unit => decl.value.includes(unit))) {
-          needsConversion = true;
-        }
-      });
-    }
 
     return needsConversion;
   };

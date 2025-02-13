@@ -9,9 +9,11 @@
  *
  * @param {Object} opts - Plugin options.
  * @param {Object} [opts.units] - A mapping of viewport units to container query units.
- * @param {string} [opts.containerEl='html'] - The container element selector.
- * @param {string} [opts.modifierAttr='data-breakpoint'] - The attribute
- * for container queries.
+ * @param {string} [opts.containerEl='body'] - The container element selector.
+ * @param {string} [opts.modifierAttr='data-breakpoint-preview-mode']
+ * - The attribute for container queries.
+ * @param {Function} [opts.transform] - A custom function to transform
+ * media queries when creating container queries.
  * @param {boolean} [opts.debug=false] - Enables debug logging.
  * @param {string} [opts.debugFilter] - A filter string for limiting debug
  * logs to specific files.
@@ -42,7 +44,6 @@ const plugin = (opts = {}) => {
   const unitConverter = createUnitConverter({ units: options.units });
   const debugUtils = createDebugUtils(options);
   const mediaProcessor = createMediaProcessor({
-    unitConverter,
     ...options
   });
   const ruleProcessor = createRuleProcessor({
@@ -75,6 +76,7 @@ const plugin = (opts = {}) => {
     root.walkDecls('position', decl => {
       if (decl.value === 'fixed') {
         needsContainerContext = true;
+        return false;
       }
     });
 
@@ -124,9 +126,6 @@ const plugin = (opts = {}) => {
       if (ruleProcessor.needsProcessing(rule)) {
         debugUtils.stats.rulesProcessed++;
         debugUtils.log(`Processing rule: ${rule.selector}`, rule);
-
-        // Keep original rule for viewport units
-        rule[processed] = true;
 
         // Create container version with converted units
         const containerRule = rule.clone({

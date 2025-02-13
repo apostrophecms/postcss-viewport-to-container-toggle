@@ -3,11 +3,10 @@
  * and convert them into container queries.
  *
  * @param {Object} options - Configuration options for the processor.
- * @param {Object} options.unitConverter - Handles unit conversions for container queries.
  * @param {Function} options.transform - A custom function to transform media queries.
  * @returns {Object} An object containing methods to process media queries.
  */
-const createMediaProcessor = ({ unitConverter, transform }) => {
+const createMediaProcessor = ({ transform }) => {
 
   /**
    * Converts a single comparison into a min/max format.
@@ -40,10 +39,8 @@ const createMediaProcessor = ({ unitConverter, transform }) => {
    * @returns {string} The condition converted into min/max format.
    */
   const convertRangeSyntax = (feature) => {
-    feature = feature.trim();
-
     // Split on 'and' to process each condition independently
-    const conditions = feature.split(' and ').map(cond => cond.trim());
+    const conditions = feature.trim().split(' and ').map(cond => cond.trim());
 
     const convertedConditions = conditions.map(cond => {
       // Full range: (100px <= width <= 200px) or (100px < width < 200px)
@@ -123,7 +120,12 @@ const createMediaProcessor = ({ unitConverter, transform }) => {
    * @returns {boolean} Returns true if the condition is related to `screen` or `all`.
    */
   const isScreenCondition = (condition) => {
-    return !condition.includes('print') && (condition.includes('screen') || condition.includes('all') || !/(all|screen|print)/.test(condition));
+    return (
+      !condition.includes('print') &&
+      (condition.includes('screen') ||
+      condition.includes('all') ||
+      !/(all|screen|print)/.test(condition))
+    );
   };
 
   /**
