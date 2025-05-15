@@ -126,9 +126,60 @@ const createRuleProcessor = ({ unitConverter }) => {
     return { hasFixedPosition };
   };
 
+  // Not working (cannot nest container query inside another rule)
+  const getContainerQuery = (atRule, {
+    helpers, containerConditions, selectorHelper, ruleProcessor
+  }) => {
+    const containerQuery = new helpers.AtRule({
+      name: 'container',
+      params: containerConditions,
+      source: atRule.source,
+      from: helpers.result.opts.from
+    });
+
+    // Clone and process rules for container query - keep selectors clean
+    atRule.walkRules(rule => {
+      const [ bodySelector ] = rule.selector.match(selectorHelper.bodyRegexFull) || [];
+      const subSelector = bodySelector && rule.selector.replace(bodySelector, '').trim();
+      const bodyRule = bodySelector && rule.clone({
+        source: rule.source,
+        from: helpers.result.opts.from,
+        selector: bodySelector
+      });
+
+      const containerRule = rule.clone({
+        source: rule.source,
+        from: helpers.result.opts.from,
+        ...subSelector && { selector: subSelector }
+      });
+
+      ruleProcessor.processDeclarations(containerRule, {
+        isContainer: true,
+        from: helpers.result.opts.from
+      });
+
+      containerRule.raws.before = '\n  ';
+      containerRule.raws.after = '\n  ';
+      containerRule.walkDecls(decl => {
+        decl.raws.before = '\n    ';
+      });
+
+      containerQuery.append(containerRule);
+      if (bodyRule) {
+        bodyRule.append(containerQuery);
+        return bodyRule;
+      }
+
+      return containerQuery;
+    });
+
+    return containerQuery;
+  };
+
   return {
     needsProcessing,
-    processDeclarations
+    processDeclarations,
+    getContainerQuery
   };
 };
 
