@@ -24,13 +24,7 @@ const createUnitConverter = require('./src/utils/unitConverter');
 const createMediaProcessor = require('./src/utils/mediaProcessor');
 const createRuleProcessor = require('./src/utils/ruleProcessor');
 const createDebugUtils = require('./src/utils/debug');
-
-const addConditionalToSelectors = (selector, conditionalNotSelector) => {
-  return selector
-    .split(',')
-    .map(part => `${conditionalNotSelector} ${part.trim()}`)
-    .join(',\n  ');
-};
+const createSelectorHelper = require('./src/utils/selectorHelper');
 
 const plugin = (opts = {}) => {
   // Merge options with defaults
@@ -39,6 +33,10 @@ const plugin = (opts = {}) => {
     ...opts
   };
   const { containerEl, modifierAttr } = options;
+
+  // Create selectors
+  const conditionalSelector = `${containerEl}[${modifierAttr}]`;
+  const conditionalNotSelector = `${containerEl}:not([${modifierAttr}])`;
 
   // Create utility instances
   const unitConverter = createUnitConverter({ units: options.units });
@@ -50,10 +48,10 @@ const plugin = (opts = {}) => {
     unitConverter,
     ...options
   });
-
-  // Create selectors
-  const conditionalSelector = `${containerEl}[${modifierAttr}]`;
-  const conditionalNotSelector = `${containerEl}:not([${modifierAttr}])`;
+  const selectorHelper = createSelectorHelper({
+    conditionalNotSelector,
+    modifierAttr
+  });
 
   // Track processed nodes to avoid duplicates
   const processed = Symbol('processed');
@@ -170,19 +168,29 @@ const plugin = (opts = {}) => {
           // Create container version first
           const containerConditions =
             mediaProcessor.convertToContainerConditions(conditions);
-          if (containerConditions.length > 0) {
+
+          if (containerConditions) {
+
+            // Trying to bypass body selector into container query (not working..)
+            /* const containerQuery = ruleProcessor.getContainerQuery(atRule, { */
+            /*   helpers, */
+            /*   containerConditions, */
+            /*   selectorHelper, */
+            /*   ruleProcessor */
+            /* }); */
+
             const containerQuery = new helpers.AtRule({
               name: 'container',
-              params: containerConditions[0],
+              params: containerConditions,
               source: atRule.source,
               from: helpers.result.opts.from
             });
 
             // Clone and process rules for container query - keep selectors clean
             atRule.walkRules(rule => {
-              const containerRule = rule.clone({
-                source: rule.source,
-                from: helpers.result.opts.from
+              const containerRule = ruleProcessor.getRuleContainer(rule, {
+                helpers,
+                selectorHelper
               });
 
               ruleProcessor.processDeclarations(containerRule, {
@@ -216,8 +224,12 @@ const plugin = (opts = {}) => {
               from: helpers.result.opts.from
             });
 
-            viewportRule.selector =
-              addConditionalToSelectors(rule.selector, conditionalNotSelector);
+            viewportRule.selector = selectorHelper.addConditionalToSelectors(
+              rule.selector,
+              conditionalNotSelector
+            );
+            /* console.log('viewportRule.selector', viewportRule.selector); */
+
             rule.replaceWith(viewportRule);
           });
         }
