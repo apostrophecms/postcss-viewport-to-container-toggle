@@ -1,21 +1,21 @@
-const containerSelector = '[data-apos-refreshable]';
 
 const createSelectorHelper = ({ conditionalNotSelector, modifierAttr }) => {
+  const containerSelector = '[data-apos-refreshable]';
   const bodyRegex = /^body|^html\s+body|^html\s*>\s*body/;
   const bodyRegexFull = /(^body|^html\s+body|^html\s*>\s*body)[.#\w\d[\]"-=:]*/;
 
   const addConditionalToSelectors = (selector, conditionalNotSelector) => {
-    let conditionalSelector = selector
+    const conditionalSelector = selector
       .split(',')
-      .map(part => `${conditionalNotSelector} ${part.trim()}`)
-      .join(',\n  ');
+      .filter(part => !part.trim() || !part.trim().match(bodyRegex))
+      .map(part => `${conditionalNotSelector} ${part.trim()}`);
 
     const bodyLevelSelector = addBodyLevelSelector(selector);
     if (bodyLevelSelector) {
-      conditionalSelector += `, ${bodyLevelSelector}`;
+      conditionalSelector.push(bodyLevelSelector);
     }
 
-    return conditionalSelector;
+    return conditionalSelector.join(',\n  ');
   };
 
   const bodySelectorToContainer = (selector) => {
@@ -43,6 +43,7 @@ const createSelectorHelper = ({ conditionalNotSelector, modifierAttr }) => {
   };
 
   return {
+    containerSelector,
     bodyRegex,
     bodyRegexFull,
     addConditionalToSelectors,
