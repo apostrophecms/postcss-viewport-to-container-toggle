@@ -120,8 +120,9 @@ const plugin = (opts = {}) => {
 
       // Do not treat cloned rules already handled
       if (
-        rule.selector.startsWith(conditionalNotSelector) ||
-        rule.selector.startsWith(containerBodySelector)
+        rule.selector.includes(conditionalNotSelector) ||
+        rule.selector.includes(containerBodySelector) ||
+        rule.selector.includes(conditionalSelector)
       ) {
         return;
       }
