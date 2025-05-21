@@ -143,6 +143,11 @@ const plugin = (opts = {}) => {
           )
         });
 
+        rule.selector = rule.selector.replace(
+          selectorHelper.bodyRegex,
+          conditionalNotSelector
+        );
+
         ruleProcessor.processDeclarations(containerRule, {
           isContainer: true,
           from: helpers.result.opts.from
@@ -150,14 +155,13 @@ const plugin = (opts = {}) => {
 
         // Add container rule after original
         rule.after('\n' + containerRule);
-      }
-
-      if (rule.selector.match(selectorHelper.bodyRegex)) {
-        const selector = rule.selector;
-        rule.selector = selectorHelper.addConditionalToSelectors(
-          selector,
-          conditionalNotSelector
-        );
+      } else {
+        if (rule.selector.match(selectorHelper.bodyRegex)) {
+          rule.selector = selectorHelper.addConditionalToSelectors(
+            rule.selector,
+            [ conditionalNotSelector, containerBodySelector ]
+          );
+        }
       }
 
       rule[processed] = true;

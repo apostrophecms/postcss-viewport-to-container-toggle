@@ -8,6 +8,15 @@ const createSelectorHelper = ({ modifierAttr }) => {
     conditionalSelector,
     returnArray = false
   ) => {
+    if (Array.isArray(conditionalSelector)) {
+      const updatedSelector = conditionalSelector.reduce((acc, cur) => {
+        const updated = addConditionalToSelectors(selector, cur, true);
+        return [ ...acc, ...updated ];
+      }, []);
+
+      return updatedSelector.join(',\n  ');
+    }
+
     const updatedSelector = selector
       .split(',')
       .reduce((acc, part) => {
