@@ -231,8 +231,7 @@ body[data-breakpoint-preview-mode] {
     top: var(--container-top);
     width: 100cqw;
   }
-}
-`;
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -746,6 +745,7 @@ body:not([data-breakpoint-preview-mode]).my-body .container {
 [data-apos-refreshable-body].my-body .container {
   width: 50cqw;
 }
+
 .my-body .container p {
   width: 50vw;
 }
@@ -761,6 +761,49 @@ body:not([data-breakpoint-preview-mode]).my-body .container {
   [data-apos-refreshable-body].toto {
   font-size: 16px;
   width: 50cqw;
+}
+`;
+
+      await run(plugin, input, output, opts);
+    });
+
+    it('should transform body selectors to work with and without mobile preview without specific units', async () => {
+      const input = `
+body {
+  color: purple;
+}
+
+html body.my-body {
+  background-color: red;
+}
+
+html>body#my-body.my-body {
+  color: green;
+}
+
+html.toto#tutu >   body#foo.bar {
+  color: green;
+}
+`;
+      const output = `
+body:not([data-breakpoint-preview-mode]),
+[data-apos-refreshable-body] {
+  color: purple;
+}
+
+body:not([data-breakpoint-preview-mode]).my-body,
+[data-apos-refreshable-body].my-body {
+  background-color: red;
+}
+
+body:not([data-breakpoint-preview-mode])#my-body.my-body,
+[data-apos-refreshable-body]#my-body.my-body {
+  color: green;
+}
+
+body:not([data-breakpoint-preview-mode])#foo.bar,
+[data-apos-refreshable-body]#foo.bar {
+  color: green;
 }
 `;
 
