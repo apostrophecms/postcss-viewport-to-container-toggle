@@ -137,7 +137,7 @@ const plugin = (opts = {}) => {
         const containerRule = rule.clone({
           source: rule.source,
           from: helpers.result.opts.from,
-          selector: selectorHelper.addConditionalToSelectors(
+          selector: selectorHelper.addTargetsToSelectors(
             rule.selector,
             containerBodySelector
           )
@@ -157,7 +157,7 @@ const plugin = (opts = {}) => {
         rule.after('\n' + containerRule);
       } else {
         if (rule.selector.match(selectorHelper.bodyRegex)) {
-          rule.selector = selectorHelper.addConditionalToSelectors(
+          rule.selector = selectorHelper.addTargetsToSelectors(
             rule.selector,
             [ conditionalNotSelector, containerBodySelector ]
           );
@@ -243,7 +243,7 @@ const plugin = (opts = {}) => {
               from: helpers.result.opts.from
             });
 
-            viewportRule.selector = selectorHelper.addConditionalToSelectors(
+            viewportRule.selector = selectorHelper.addTargetsToSelectors(
               rule.selector,
               conditionalNotSelector
             );

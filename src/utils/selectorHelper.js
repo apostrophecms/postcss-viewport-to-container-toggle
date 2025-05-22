@@ -3,14 +3,14 @@ const createSelectorHelper = ({ modifierAttr }) => {
   const bodyRegex = /^body|^html.*\s+body|^html.*\s*>\s*body/;
   const bodyRegexFull = /(^body|^html\s+body|^html\s*>\s*body)[.#\w\d[\]"-=:]*/;
 
-  const addConditionalToSelectors = (
+  const addTargetsToSelectors = (
     selector,
-    conditionalSelector,
+    target,
     returnArray = false
   ) => {
-    if (Array.isArray(conditionalSelector)) {
-      const updatedSelector = conditionalSelector.reduce((acc, cur) => {
-        const updated = addConditionalToSelectors(selector, cur, true);
+    if (Array.isArray(target)) {
+      const updatedSelector = target.reduce((acc, cur) => {
+        const updated = addTargetsToSelectors(selector, cur, true);
         return [ ...acc, ...updated ];
       }, []);
 
@@ -22,9 +22,9 @@ const createSelectorHelper = ({ modifierAttr }) => {
       .reduce((acc, part) => {
         const trimmed = part.trim();
         if (!trimmed.match(bodyRegex)) {
-          acc.push(`${conditionalSelector} ${trimmed}`);
+          acc.push(`${target} ${trimmed}`);
         }
-        const bodyLevelSelector = getLevelBodySelector(trimmed, conditionalSelector);
+        const bodyLevelSelector = getBodyLevelSelector(trimmed, target);
         if (bodyLevelSelector) {
           acc.push(bodyLevelSelector);
         }
@@ -34,13 +34,13 @@ const createSelectorHelper = ({ modifierAttr }) => {
     return returnArray ? updatedSelector : updatedSelector.join(',\n  ');
   };
 
-  const getLevelBodySelector = (selector, conditionalSelector) => {
+  const getBodyLevelSelector = (selector, target) => {
     if (selector.match(bodyRegex)) {
       selector = selector.replace(bodyRegex, '');
 
       // Selector is a body without identifiers, we put style in the body directly
       if (!selector) {
-        return conditionalSelector;
+        return target;
       }
     }
 
@@ -48,7 +48,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
     // in case the body has this identifier
     const noTagSelector = selector.match(/^\.|^#|^\[|^:/);
     if (noTagSelector) {
-      return `${conditionalSelector}${selector}`;
+      return `${target}${selector}`;
     }
 
     return null;
@@ -57,7 +57,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
   return {
     bodyRegex,
     bodyRegexFull,
-    addConditionalToSelectors
+    addTargetsToSelectors
   };
 };
 
