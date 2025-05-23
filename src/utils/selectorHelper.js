@@ -1,7 +1,6 @@
 
 const createSelectorHelper = ({ modifierAttr }) => {
   const bodyRegex = /^body|^html.*\s+body|^html.*\s*>\s*body/;
-  const bodyRegexFull = /(^body|^html\s+body|^html\s*>\s*body)[.#\w\d[\]"-=:]*/;
 
   const addTargetsToSelectors = (
     selector,
@@ -56,7 +55,6 @@ const createSelectorHelper = ({ modifierAttr }) => {
 
   return {
     bodyRegex,
-    bodyRegexFull,
     addTargetsToSelectors
   };
 };
