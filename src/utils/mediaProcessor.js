@@ -201,11 +201,11 @@ const createMediaProcessor = ({ transform }) => {
    * Converts an array of media conditions into container query conditions.
    *
    * @param {string[]} conditions - An array of media conditions to convert.
-   * @returns {string[]} An array of container query conditions.
+   * @returns {string|null} A string containing the container query conditions.
    */
   const convertToContainerConditions = (conditions) => {
     if (!conditions.length) {
-      return [];
+      return null;
     }
 
     // Join all conditions with 'and'
@@ -226,7 +226,7 @@ const createMediaProcessor = ({ transform }) => {
       containerQuery = `${containerQuery})`;
     }
 
-    return [ containerQuery.trim() ];
+    return containerQuery.trim();
   };
 
   return {

@@ -24,13 +24,7 @@ const createUnitConverter = require('./src/utils/unitConverter');
 const createMediaProcessor = require('./src/utils/mediaProcessor');
 const createRuleProcessor = require('./src/utils/ruleProcessor');
 const createDebugUtils = require('./src/utils/debug');
-
-const addConditionalToSelectors = (selector, conditionalNotSelector) => {
-  return selector
-    .split(',')
-    .map(part => `${conditionalNotSelector} ${part.trim()}`)
-    .join(',\n  ');
-};
+const createSelectorHelper = require('./src/utils/selectorHelper');
 
 const plugin = (opts = {}) => {
   // Merge options with defaults
@@ -39,6 +33,11 @@ const plugin = (opts = {}) => {
     ...opts
   };
   const { containerEl, modifierAttr } = options;
+
+  // Create selectors
+  const conditionalSelector = `${containerEl}[${modifierAttr}]`;
+  const conditionalNotSelector = `${containerEl}:not([${modifierAttr}])`;
+  const containerBodySelector = '[data-apos-refreshable-body]';
 
   // Create utility instances
   const unitConverter = createUnitConverter({ units: options.units });
@@ -50,10 +49,7 @@ const plugin = (opts = {}) => {
     unitConverter,
     ...options
   });
-
-  // Create selectors
-  const conditionalSelector = `${containerEl}[${modifierAttr}]`;
-  const conditionalNotSelector = `${containerEl}:not([${modifierAttr}])`;
+  const selectorHelper = createSelectorHelper({ modifierAttr });
 
   // Track processed nodes to avoid duplicates
   const processed = Symbol('processed');
@@ -122,17 +118,36 @@ const plugin = (opts = {}) => {
         return;
       }
 
+      // Do not treat cloned rules already handled
+      if (
+        rule.selector.includes(conditionalNotSelector) ||
+        rule.selector.includes(containerBodySelector) ||
+        rule.selector.includes(conditionalSelector)
+      ) {
+        return;
+      }
+
       // Process rule if it needs conversion
       if (ruleProcessor.needsProcessing(rule)) {
         debugUtils.stats.rulesProcessed++;
         debugUtils.log(`Processing rule: ${rule.selector}`, rule);
 
         // Create container version with converted units
+        // should target [data-apos-refreshable-body]
         const containerRule = rule.clone({
           source: rule.source,
-          from: helpers.result.opts.from
+          from: helpers.result.opts.from,
+          selector: selectorHelper.addTargetsToSelectors(
+            rule.selector,
+            containerBodySelector
+          )
         });
-        containerRule.selector = `${conditionalSelector} ${rule.selector}`;
+
+        rule.selector = rule.selector.replace(
+          selectorHelper.bodyRegex,
+          conditionalNotSelector
+        );
+
         ruleProcessor.processDeclarations(containerRule, {
           isContainer: true,
           from: helpers.result.opts.from
@@ -140,6 +155,13 @@ const plugin = (opts = {}) => {
 
         // Add container rule after original
         rule.after('\n' + containerRule);
+      } else {
+        if (rule.selector.match(selectorHelper.bodyRegex)) {
+          rule.selector = selectorHelper.addTargetsToSelectors(
+            rule.selector,
+            [ conditionalNotSelector, containerBodySelector ]
+          );
+        }
       }
 
       rule[processed] = true;
@@ -170,10 +192,11 @@ const plugin = (opts = {}) => {
           // Create container version first
           const containerConditions =
             mediaProcessor.convertToContainerConditions(conditions);
-          if (containerConditions.length > 0) {
+
+          if (containerConditions) {
             const containerQuery = new helpers.AtRule({
               name: 'container',
-              params: containerConditions[0],
+              params: containerConditions,
               source: atRule.source,
               from: helpers.result.opts.from
             });
@@ -182,7 +205,11 @@ const plugin = (opts = {}) => {
             atRule.walkRules(rule => {
               const containerRule = rule.clone({
                 source: rule.source,
-                from: helpers.result.opts.from
+                from: helpers.result.opts.from,
+                selector: rule.selector.replace(
+                  selectorHelper.bodyRegex,
+                  containerBodySelector
+                )
               });
 
               ruleProcessor.processDeclarations(containerRule, {
@@ -216,8 +243,11 @@ const plugin = (opts = {}) => {
               from: helpers.result.opts.from
             });
 
-            viewportRule.selector =
-              addConditionalToSelectors(rule.selector, conditionalNotSelector);
+            viewportRule.selector = selectorHelper.addTargetsToSelectors(
+              rule.selector,
+              conditionalNotSelector
+            );
+
             rule.replaceWith(viewportRule);
           });
         }

@@ -38,9 +38,9 @@ async function run(plugin, input, output, opts = {}) {
     console.log('Input:');
     console.log(input);
     console.log('\nExpected Output (Formatted):');
-    console.log(await formatCSS(output));
-    console.log('\nActual Output (Formatted):');
-    console.log(await formatCSS(result.css));
+    console.log(output);
+    console.log('\nActual Output:');
+    console.log(result.css);
 
     throw error;
   }
@@ -62,11 +62,13 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   line-height: calc(1.5 + 1vh);
   letter-spacing: 0.5vmin;
 }
-body[data-breakpoint-preview-mode] .text {
+[data-apos-refreshable-body] .text,
+[data-apos-refreshable-body].text {
   font-size: calc(16px + 2cqw);
   line-height: calc(1.5 + 1cqh);
   letter-spacing: 0.5cqi;
-}`.trim();
+}
+`;
 
       await run(plugin, input, output, opts);
     });
@@ -82,10 +84,11 @@ body[data-breakpoint-preview-mode] .text {
   font-size: clamp(1rem, 2vw + 1rem, 3rem);
   line-height: clamp(1.2, calc(1 + 2vh), 1.8);
 }
-body[data-breakpoint-preview-mode] .fluid-text {
+[data-apos-refreshable-body] .fluid-text,
+[data-apos-refreshable-body].fluid-text {
   font-size: clamp(1rem, 1rem + 2cqw, 3rem);
   line-height: clamp(1.2, calc(1 + 2cqh), 1.8);
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -101,10 +104,11 @@ body[data-breakpoint-preview-mode] .fluid-text {
   color: red;
   font-size: 2vw;
 }
-body[data-breakpoint-preview-mode] .foo {
+[data-apos-refreshable-body] .foo,
+[data-apos-refreshable-body].foo {
   color: red;
   font-size: 2cqw;
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -118,9 +122,10 @@ body[data-breakpoint-preview-mode] .foo {
 .decimals {
   font-size: 2.75vw;
 }
-body[data-breakpoint-preview-mode] .decimals {
+[data-apos-refreshable-body] .decimals,
+[data-apos-refreshable-body].decimals {
   font-size: 2.75cqw;
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -134,9 +139,10 @@ body[data-breakpoint-preview-mode] .decimals {
 .zero-test {
   font-size: 0vw;
 }
-body[data-breakpoint-preview-mode] .zero-test {
+[data-apos-refreshable-body] .zero-test,
+[data-apos-refreshable-body].zero-test{
   font-size: 0cqw;
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -150,9 +156,10 @@ body[data-breakpoint-preview-mode] .zero-test {
 .nested-calc {
   font-size: clamp(1rem, calc(50vw - 2rem), calc(100vh - 4rem));
 }
-body[data-breakpoint-preview-mode] .nested-calc {
+[data-apos-refreshable-body] .nested-calc,
+[data-apos-refreshable-body].nested-calc {
   font-size: clamp(1rem, calc(50cqw - 2rem), calc(100cqh - 4rem));
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -181,7 +188,8 @@ body[data-breakpoint-preview-mode] {
   width: 100vw;
   height: 60px;
 }
-body[data-breakpoint-preview-mode] .fixed-header {
+[data-apos-refreshable-body] .fixed-header,
+[data-apos-refreshable-body].fixed-header {
   position: sticky;
   --container-top: 0;
   top: var(--container-top);
@@ -189,7 +197,7 @@ body[data-breakpoint-preview-mode] .fixed-header {
   left: var(--container-left);
   width: 100cqw;
   height: 60px;
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -209,7 +217,8 @@ body[data-breakpoint-preview-mode] {
   contain: layout;
 }
 @media (min-width: 768px) {
-  body:not([data-breakpoint-preview-mode]) .fixed-in-media {
+  body:not([data-breakpoint-preview-mode]) .fixed-in-media,
+  body:not([data-breakpoint-preview-mode]).fixed-in-media {
     position: fixed;
     top: 0;
     width: 100vw;
@@ -222,7 +231,7 @@ body[data-breakpoint-preview-mode] {
     top: var(--container-top);
     width: 100cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -245,12 +254,13 @@ body[data-breakpoint-preview-mode] {
   min-height: 100svh;
   max-width: 100lvw;
 }
-body[data-breakpoint-preview-mode] .dynamic {
+[data-apos-refreshable-body] .dynamic,
+[data-apos-refreshable-body].dynamic {
   height: 100cqh;
   width: 100cqw;
   min-height: 100cqh;
   max-width: 100cqw;
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -266,10 +276,11 @@ body[data-breakpoint-preview-mode] .dynamic {
   margin: calc(10px + 2vw - 1vh);
   padding: calc((100vw - 20px) / 2 + 1vmin);
 }
-body[data-breakpoint-preview-mode] .complex {
+[data-apos-refreshable-body] .complex,
+[data-apos-refreshable-body].complex {
   margin: calc(10px + 2cqw - 1cqh);
   padding: calc((100cqw - 20px) / 2 + 1cqmin);
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -286,7 +297,8 @@ body[data-breakpoint-preview-mode] .complex {
 }`;
       const output = `
 @media (width <= 1024px) {
-  body:not([data-breakpoint-preview-mode]) .single-operator {
+  body:not([data-breakpoint-preview-mode]) .single-operator,
+  body:not([data-breakpoint-preview-mode]).single-operator {
     width: 100vw;
   }
 }
@@ -294,7 +306,7 @@ body[data-breakpoint-preview-mode] .complex {
   .single-operator {
     width: 100cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -308,7 +320,8 @@ body[data-breakpoint-preview-mode] .complex {
 }`;
       const output = `
 @media (width >= 240px) {
-  body:not([data-breakpoint-preview-mode]) .single-operator {
+  body:not([data-breakpoint-preview-mode]) .single-operator,
+  body:not([data-breakpoint-preview-mode]).single-operator {
     width: 100vw;
   }
 }
@@ -316,7 +329,7 @@ body[data-breakpoint-preview-mode] .complex {
   .single-operator {
     width: 100cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -330,7 +343,8 @@ body[data-breakpoint-preview-mode] .complex {
 }`;
       const output = `
 @media (width<=1024px) {
-  body:not([data-breakpoint-preview-mode]) .poorly-formatted {
+  body:not([data-breakpoint-preview-mode]) .poorly-formatted,
+  body:not([data-breakpoint-preview-mode]).poorly-formatted {
     width: 100vw;
   }
 }
@@ -338,7 +352,7 @@ body[data-breakpoint-preview-mode] .complex {
   .poorly-formatted {
     width: 100cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -353,7 +367,8 @@ body[data-breakpoint-preview-mode] .complex {
 }`;
       const output = `
 @media (min-width: 500px) and (width<=1024px) {
-  body:not([data-breakpoint-preview-mode]) .combined-operator {
+  body:not([data-breakpoint-preview-mode]) .combined-operator,
+  body:not([data-breakpoint-preview-mode]).combined-operator {
     width: 90vw;
     margin: 0 5vw;
   }
@@ -363,7 +378,7 @@ body[data-breakpoint-preview-mode] .complex {
     width: 90cqw;
     margin: 0 5cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -381,7 +396,8 @@ body[data-breakpoint-preview-mode] .complex {
 }`;
       const output = `
 @media (240px <= width <= 1024px) {
-  body:not([data-breakpoint-preview-mode]) .range {
+  body:not([data-breakpoint-preview-mode]) .range,
+  body:not([data-breakpoint-preview-mode]).range {
     width: 90vw;
     margin: 0 5vw;
   }
@@ -391,7 +407,7 @@ body[data-breakpoint-preview-mode] .complex {
     width: 90cqw;
     margin: 0 5cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -405,7 +421,8 @@ body[data-breakpoint-preview-mode] .complex {
 }`;
       const output = `
 @media screen and (min-width: 768px), print {
-  body:not([data-breakpoint-preview-mode]) .mixed {
+  body:not([data-breakpoint-preview-mode]) .mixed,
+  body:not([data-breakpoint-preview-mode]).mixed {
     width: 80vw;
   }
 }
@@ -413,7 +430,7 @@ body[data-breakpoint-preview-mode] .complex {
   .mixed {
     width: 80cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -428,7 +445,8 @@ body[data-breakpoint-preview-mode] .complex {
 }`;
       const output = `
 @media (orientation: landscape) and (min-width: 768px) {
-  body:not([data-breakpoint-preview-mode]) .landscape {
+  body:not([data-breakpoint-preview-mode]) .landscape,
+  body:not([data-breakpoint-preview-mode]).landscape {
     height: 100vh;
     width: 100vw;
   }
@@ -438,7 +456,7 @@ body[data-breakpoint-preview-mode] .complex {
     height: 100cqh;
     width: 100cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -453,7 +471,8 @@ body[data-breakpoint-preview-mode] .complex {
 }`;
       const output = `
 @media (orientation: landscape) {
-  body:not([data-breakpoint-preview-mode]) .landscape {
+  body:not([data-breakpoint-preview-mode]) .landscape,
+  body:not([data-breakpoint-preview-mode]).landscape {
     height: 100vh;
     width: 100vw;
   }
@@ -463,7 +482,7 @@ body[data-breakpoint-preview-mode] .complex {
     height: 100cqh;
     width: 100cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -478,7 +497,10 @@ body[data-breakpoint-preview-mode] .complex {
 }`;
       const output = `
 @media (min-width: 320px) {
-  body:not([data-breakpoint-preview-mode]) .mobile { width: 90vw; }
+  body:not([data-breakpoint-preview-mode]) .mobile, 
+  body:not([data-breakpoint-preview-mode]).mobile { 
+    width: 90vw; 
+  }
 }
 @container (min-width: 320px) {
   .mobile {
@@ -486,13 +508,16 @@ body[data-breakpoint-preview-mode] .complex {
   }
 }
 @media (min-width: 768px) {
-  body:not([data-breakpoint-preview-mode]) .tablet { width: 80vw; }
+  body:not([data-breakpoint-preview-mode]) .tablet,
+  body:not([data-breakpoint-preview-mode]).tablet {
+    width: 80vw; 
+  }
 }
 @container (min-width: 768px) {
   .tablet {
     width: 80cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -512,7 +537,8 @@ body[data-breakpoint-preview-mode] .complex {
       const output = `
 @media screen {
   @media (min-width: 768px) {
-    body:not([data-breakpoint-preview-mode]) .nested {
+    body:not([data-breakpoint-preview-mode]) .nested, 
+    body:not([data-breakpoint-preview-mode]).nested {
       width: 80vw;
     }
   }
@@ -521,7 +547,7 @@ body[data-breakpoint-preview-mode] .complex {
   .nested {
     width: 80cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -542,7 +568,7 @@ body[data-breakpoint-preview-mode] .complex {
   .print-only {
     width: 50vw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, opts);
     });
@@ -564,7 +590,8 @@ body[data-breakpoint-preview-mode] .complex {
 }`;
       const output = `
 @media (min-width: 500px) {
-  body:not([data-breakpoint-preview-mode]) .transformed {
+  body:not([data-breakpoint-preview-mode]) .transformed,
+  body:not([data-breakpoint-preview-mode]).transformed {
     width: 50vw;
   }
 }
@@ -572,12 +599,215 @@ body[data-breakpoint-preview-mode] .complex {
   .transformed {
     width: 50cqw;
   }
-}`.trim();
+}`;
 
       await run(plugin, input, output, {
         ...opts,
         transform: customTransform
       });
+    });
+  });
+
+  describe('Body level style to container compatibility', () => {
+    it('should conserve body level styles when breakpoint preview is off (in media queries)', async () => {
+      const input = `
+@media (min-width: 768px) {
+  body {
+    font-size: 16px;
+  }
+  html.toto body.my-body {
+    font-size: 16px;
+  }
+  html#foo body.my-body {
+    font-size: 16px;
+  }
+  html>body#my-body.my-body {
+    font-size: 16px;
+  }
+  #my-body {
+    font-size: 16px;
+  }
+  .my-body {
+    font-size: 16px;
+  }
+  body.my-body p {
+    color: green;
+  }
+  body#my-body.my-body p {
+    color: green;
+  }
+  #my-body p {
+    color: green;
+  }
+  .my-body p {
+    color: green;
+  }
+}
+`;
+
+      const output = `
+@media (min-width: 768px) {
+  body:not([data-breakpoint-preview-mode]) {
+    font-size: 16px;
+  }
+  body:not([data-breakpoint-preview-mode]).my-body {
+    font-size: 16px;
+  }
+  body:not([data-breakpoint-preview-mode]).my-body {
+    font-size: 16px;
+  }
+  body:not([data-breakpoint-preview-mode])#my-body.my-body {
+    font-size: 16px;
+  }
+  body:not([data-breakpoint-preview-mode]) #my-body,
+  body:not([data-breakpoint-preview-mode])#my-body {
+    font-size: 16px;
+  }
+  body:not([data-breakpoint-preview-mode]) .my-body,
+  body:not([data-breakpoint-preview-mode]).my-body {
+    font-size: 16px;
+  }
+  body:not([data-breakpoint-preview-mode]).my-body p {
+    color: green;
+  }
+  body:not([data-breakpoint-preview-mode])#my-body.my-body p {
+    color: green;
+  }
+  body:not([data-breakpoint-preview-mode]) #my-body p,
+  body:not([data-breakpoint-preview-mode])#my-body p {
+    color: green;
+  }
+  body:not([data-breakpoint-preview-mode]) .my-body p,
+  body:not([data-breakpoint-preview-mode]).my-body p {
+    color: green;
+  }
+}
+@container (min-width: 768px) {
+  [data-apos-refreshable-body] {
+    font-size: 16px;
+  }
+  [data-apos-refreshable-body].my-body {
+    font-size: 16px;
+  }
+  [data-apos-refreshable-body].my-body {
+    font-size: 16px;
+  }
+  [data-apos-refreshable-body]#my-body.my-body {
+    font-size: 16px;
+  }
+  #my-body {
+    font-size: 16px;
+  }
+  .my-body {
+    font-size: 16px;
+  }
+  [data-apos-refreshable-body].my-body p {
+    color: green;
+  }
+  [data-apos-refreshable-body]#my-body.my-body p {
+    color: green;
+  }
+  #my-body p {
+    color: green;
+  }
+  .my-body p {
+    color: green;
+  }
+}`;
+
+      await run(plugin, input, output, opts);
+    });
+
+    it('should move style from body to container fake body out of media queries', async () => {
+      const input = `
+.toto div {
+  font-size: 16px;
+}
+body.my-body .container {
+  width: 50vw;
+}
+.my-body .container p {
+  width: 50vw;
+}
+.toto {
+  font-size: 16px;
+  width: 50vw;
+}
+`;
+
+      const output = `
+.toto div {
+  font-size: 16px;
+}
+body:not([data-breakpoint-preview-mode]).my-body .container {
+  width: 50vw;
+}
+[data-apos-refreshable-body].my-body .container {
+  width: 50cqw;
+}
+
+.my-body .container p {
+  width: 50vw;
+}
+[data-apos-refreshable-body] .my-body .container p,
+  [data-apos-refreshable-body].my-body .container p {
+  width: 50cqw;
+}
+.toto {
+  font-size: 16px;
+  width: 50vw;
+}
+[data-apos-refreshable-body] .toto,
+  [data-apos-refreshable-body].toto {
+  font-size: 16px;
+  width: 50cqw;
+}
+`;
+
+      await run(plugin, input, output, opts);
+    });
+
+    it('should transform body selectors to work with and without mobile preview without specific units', async () => {
+      const input = `
+body {
+  color: purple;
+}
+
+html body.my-body {
+  background-color: red;
+}
+
+html>body#my-body.my-body {
+  color: green;
+}
+
+html.toto#tutu >   body#foo.bar {
+  color: green;
+}
+`;
+      const output = `
+body:not([data-breakpoint-preview-mode]),
+[data-apos-refreshable-body] {
+  color: purple;
+}
+
+body:not([data-breakpoint-preview-mode]).my-body,
+[data-apos-refreshable-body].my-body {
+  background-color: red;
+}
+
+body:not([data-breakpoint-preview-mode])#my-body.my-body,
+[data-apos-refreshable-body]#my-body.my-body {
+  color: green;
+}
+
+body:not([data-breakpoint-preview-mode])#foo.bar,
+[data-apos-refreshable-body]#foo.bar {
+  color: green;
+}
+`;
+
+      await run(plugin, input, output, opts);
     });
   });
 
@@ -591,7 +821,8 @@ body[data-breakpoint-preview-mode] .complex {
       const input = '.debug { width: 100vw; }';
       const output = `
 .debug { width: 100vw; }
-body[data-breakpoint-preview-mode] .debug { width: 100cqw; }`.trim();
+[data-apos-refreshable-body] .debug,
+[data-apos-refreshable-body].debug { width: 100cqw; }`;
 
       await run(plugin, input, output, debugOpts);
     });
