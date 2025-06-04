@@ -5,7 +5,7 @@
 ### Adds
 
 * Supports body style in and out of media queries. Also supports body style applied to indentifiers like ids and classes if they exist on the body tag. 
-Uses the new `[data-apos-refreshable-body]` that exist and replace the body in breakpoint preview in core.
+Uses the new `[data-apos-refreshable-body]` that exists and replace the body in breakpoint preview in core.
 
 ## 1.1.0 (2025-03-19)
 
