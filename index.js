@@ -114,7 +114,8 @@ const plugin = (opts = {}) => {
       }
 
       // Skip rules inside media queries - these will be handled by AtRule
-      if (rule.parent?.type === 'atrule' && rule.parent?.name === 'media') {
+      // as well as the ones inside a container query
+      if (rule.parent?.type === 'atrule' && [ 'media', 'container' ].includes(rule.parent?.name)) {
         return;
       }
 
@@ -137,15 +138,15 @@ const plugin = (opts = {}) => {
         const containerRule = rule.clone({
           source: rule.source,
           from: helpers.result.opts.from,
-          selector: selectorHelper.addTargetsToSelectors(
+          selector: selectorHelper.addTargetToSelectors(
             rule.selector,
             containerBodySelector
           )
         });
 
-        rule.selector = rule.selector.replace(
-          selectorHelper.bodyRegex,
-          conditionalNotSelector
+        rule.selector = selectorHelper.updateBodySelectors(
+          rule.selector,
+          [ conditionalNotSelector ]
         );
 
         ruleProcessor.processDeclarations(containerRule, {
@@ -204,9 +205,9 @@ const plugin = (opts = {}) => {
               const containerRule = rule.clone({
                 source: rule.source,
                 from: helpers.result.opts.from,
-                selector: rule.selector.replace(
-                  selectorHelper.bodyRegex,
-                  containerBodySelector
+                selector: selectorHelper.updateBodySelectors(
+                  rule.selector,
+                  [ containerBodySelector ]
                 )
               });
 
@@ -241,7 +242,7 @@ const plugin = (opts = {}) => {
               from: helpers.result.opts.from
             });
 
-            viewportRule.selector = selectorHelper.addTargetsToSelectors(
+            viewportRule.selector = selectorHelper.addTargetToSelectors(
               rule.selector,
               conditionalNotSelector
             );

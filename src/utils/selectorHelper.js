@@ -3,7 +3,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
   const bodyRegex = /^body|^html.*\s+body|^html.*\s*>\s*body/;
   const tagRegex = /^\.|^#|^\[|^:/;
 
-  const addTargetsToSelectors = (
+  const addTargetToSelectors = (
     selector,
     target
   ) => {
@@ -76,7 +76,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
 
   return {
     bodyRegex,
-    addTargetsToSelectors,
+    addTargetToSelectors,
     updateBodySelectors
   };
 };
