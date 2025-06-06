@@ -156,12 +156,10 @@ const plugin = (opts = {}) => {
         // Add container rule after original
         rule.after('\n' + containerRule);
       } else {
-        if (rule.selector.match(selectorHelper.bodyRegex)) {
-          rule.selector = selectorHelper.addTargetsToSelectors(
-            rule.selector,
-            [ conditionalNotSelector, containerBodySelector ]
-          );
-        }
+        rule.selector = selectorHelper.updateBodySelectors(
+          rule.selector,
+          [ conditionalNotSelector, containerBodySelector ]
+        );
       }
 
       rule[processed] = true;

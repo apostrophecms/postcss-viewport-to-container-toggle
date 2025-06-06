@@ -1,21 +1,12 @@
 
 const createSelectorHelper = ({ modifierAttr }) => {
   const bodyRegex = /^body|^html.*\s+body|^html.*\s*>\s*body/;
+  const tagRegex = /^\.|^#|^\[|^:/;
 
   const addTargetsToSelectors = (
     selector,
-    target,
-    returnArray = false
+    target
   ) => {
-    if (Array.isArray(target)) {
-      const updatedSelector = target.reduce((acc, cur) => {
-        const updated = addTargetsToSelectors(selector, cur, true);
-        return [ ...acc, ...updated ];
-      }, []);
-
-      return updatedSelector.join(',\n  ');
-    }
-
     const updatedSelector = selector
       .split(',')
       .reduce((acc, part) => {
@@ -23,6 +14,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
         if (!trimmed.match(bodyRegex)) {
           acc.push(`${target} ${trimmed}`);
         }
+
         const bodyLevelSelector = getBodyLevelSelector(trimmed, target);
         if (bodyLevelSelector) {
           acc.push(bodyLevelSelector);
@@ -30,7 +22,36 @@ const createSelectorHelper = ({ modifierAttr }) => {
         return acc;
       }, []);
 
-    return returnArray ? updatedSelector : updatedSelector.join(',\n  ');
+    return updatedSelector.join(',\n  ');
+  };
+
+  const updateBodySelectors = (selector, targets) => {
+    const updatedSelector = selector
+      .split(',')
+      .reduce((acc, part) => {
+        const trimmed = part.trim();
+
+        // Should we get body level selector here?
+        if (!trimmed.match(bodyRegex)) {
+          return [ ...acc, trimmed ];
+        }
+
+        const updatedPart = trimmed.replace(bodyRegex, '');
+
+        // We replace each body selector with the target,
+        // we keep the rest of the selector
+        return [
+          ...acc,
+          ...targets.reduce((acc, target) => {
+            return [
+              ...acc,
+              `${target}${updatedPart}`.trim()
+            ];
+          }, [])
+        ];
+      }, []);
+
+    return updatedSelector.join(',\n  ');
   };
 
   const getBodyLevelSelector = (selector, target) => {
@@ -45,7 +66,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
 
     // If selector starts by an identifier that is not a tag, we put it next to the body
     // in case the body has this identifier
-    const noTagSelector = selector.match(/^\.|^#|^\[|^:/);
+    const noTagSelector = selector.match(tagRegex);
     if (noTagSelector) {
       return `${target}${selector}`;
     }
@@ -55,7 +76,8 @@ const createSelectorHelper = ({ modifierAttr }) => {
 
   return {
     bodyRegex,
-    addTargetsToSelectors
+    addTargetsToSelectors,
+    updateBodySelectors
   };
 };
 
