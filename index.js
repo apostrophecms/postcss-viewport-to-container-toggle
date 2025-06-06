@@ -114,8 +114,11 @@ const plugin = (opts = {}) => {
       }
 
       // Skip rules inside media queries - these will be handled by AtRule
-      // as well as the ones inside a container query
-      if (rule.parent?.type === 'atrule' && [ 'media', 'container' ].includes(rule.parent?.name)) {
+      // as well as the ones inside container queries (already processed or from css)
+      if (
+        rule.parent?.type === 'atrule' &&
+        [ 'media', 'container' ].includes(rule.parent?.name)
+      ) {
         return;
       }
 
