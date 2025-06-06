@@ -114,7 +114,11 @@ const plugin = (opts = {}) => {
       }
 
       // Skip rules inside media queries - these will be handled by AtRule
-      if (rule.parent?.type === 'atrule' && rule.parent?.name === 'media') {
+      // as well as the ones inside container queries (already processed or from css)
+      if (
+        rule.parent?.type === 'atrule' &&
+        [ 'media', 'container' ].includes(rule.parent?.name)
+      ) {
         return;
       }
 
@@ -137,15 +141,15 @@ const plugin = (opts = {}) => {
         const containerRule = rule.clone({
           source: rule.source,
           from: helpers.result.opts.from,
-          selector: selectorHelper.addTargetsToSelectors(
+          selector: selectorHelper.addTargetToSelectors(
             rule.selector,
             containerBodySelector
           )
         });
 
-        rule.selector = rule.selector.replace(
-          selectorHelper.bodyRegex,
-          conditionalNotSelector
+        rule.selector = selectorHelper.updateBodySelectors(
+          rule.selector,
+          [ conditionalNotSelector ]
         );
 
         ruleProcessor.processDeclarations(containerRule, {
@@ -156,12 +160,10 @@ const plugin = (opts = {}) => {
         // Add container rule after original
         rule.after('\n' + containerRule);
       } else {
-        if (rule.selector.match(selectorHelper.bodyRegex)) {
-          rule.selector = selectorHelper.addTargetsToSelectors(
-            rule.selector,
-            [ conditionalNotSelector, containerBodySelector ]
-          );
-        }
+        rule.selector = selectorHelper.updateBodySelectors(
+          rule.selector,
+          [ conditionalNotSelector, containerBodySelector ]
+        );
       }
 
       rule[processed] = true;
@@ -206,9 +208,9 @@ const plugin = (opts = {}) => {
               const containerRule = rule.clone({
                 source: rule.source,
                 from: helpers.result.opts.from,
-                selector: rule.selector.replace(
-                  selectorHelper.bodyRegex,
-                  containerBodySelector
+                selector: selectorHelper.updateBodySelectors(
+                  rule.selector,
+                  [ containerBodySelector ]
                 )
               });
 
@@ -243,7 +245,7 @@ const plugin = (opts = {}) => {
               from: helpers.result.opts.from
             });
 
-            viewportRule.selector = selectorHelper.addTargetsToSelectors(
+            viewportRule.selector = selectorHelper.addTargetToSelectors(
               rule.selector,
               conditionalNotSelector
             );

@@ -613,6 +613,9 @@ body[data-breakpoint-preview-mode] {
       const input = `
 @media (min-width: 768px) {
   body {
+    font-size: 14px;
+  }
+  .toto, html body {
     font-size: 16px;
   }
   html.toto body.my-body {
@@ -647,6 +650,11 @@ body[data-breakpoint-preview-mode] {
 
       const output = `
 @media (min-width: 768px) {
+  body:not([data-breakpoint-preview-mode]) {
+    font-size: 14px;
+  }
+  body:not([data-breakpoint-preview-mode]) .toto,
+  body:not([data-breakpoint-preview-mode]).toto,
   body:not([data-breakpoint-preview-mode]) {
     font-size: 16px;
   }
@@ -683,6 +691,10 @@ body[data-breakpoint-preview-mode] {
   }
 }
 @container (min-width: 768px) {
+  [data-apos-refreshable-body] {
+    font-size: 14px;
+  }
+  .toto,
   [data-apos-refreshable-body] {
     font-size: 16px;
   }
@@ -723,6 +735,9 @@ body[data-breakpoint-preview-mode] {
 .toto div {
   font-size: 16px;
 }
+.toto, body {
+  background-color: green;
+}
 body.my-body .container {
   width: 50vw;
 }
@@ -739,13 +754,17 @@ body.my-body .container {
 .toto div {
   font-size: 16px;
 }
+.toto,
+body:not([data-breakpoint-preview-mode]),
+[data-apos-refreshable-body] {
+  background-color: green;
+}
 body:not([data-breakpoint-preview-mode]).my-body .container {
   width: 50vw;
 }
 [data-apos-refreshable-body].my-body .container {
   width: 50cqw;
 }
-
 .my-body .container p {
   width: 50vw;
 }
@@ -772,15 +791,15 @@ body:not([data-breakpoint-preview-mode]).my-body .container {
 body {
   color: purple;
 }
-
+.foo .bar, body .apos-area p {
+  color: lightblue;
+}
 html body.my-body {
   background-color: red;
 }
-
 html>body#my-body.my-body {
   color: green;
 }
-
 html.toto#tutu >   body#foo.bar {
   color: green;
 }
@@ -790,17 +809,19 @@ body:not([data-breakpoint-preview-mode]),
 [data-apos-refreshable-body] {
   color: purple;
 }
-
+.foo .bar,
+body:not([data-breakpoint-preview-mode]) .apos-area p,
+[data-apos-refreshable-body] .apos-area p {
+  color: lightblue;
+}
 body:not([data-breakpoint-preview-mode]).my-body,
 [data-apos-refreshable-body].my-body {
   background-color: red;
 }
-
 body:not([data-breakpoint-preview-mode])#my-body.my-body,
 [data-apos-refreshable-body]#my-body.my-body {
   color: green;
 }
-
 body:not([data-breakpoint-preview-mode])#foo.bar,
 [data-apos-refreshable-body]#foo.bar {
   color: green;
