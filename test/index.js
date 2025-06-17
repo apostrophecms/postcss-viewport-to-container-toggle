@@ -217,8 +217,8 @@ body[data-breakpoint-preview-mode] {
   contain: layout;
 }
 @media (min-width: 768px) {
-  body:not([data-breakpoint-preview-mode]) .fixed-in-media,
-  body:not([data-breakpoint-preview-mode]).fixed-in-media {
+  :where(body:not([data-breakpoint-preview-mode])) .fixed-in-media,
+  :where(body:not([data-breakpoint-preview-mode])).fixed-in-media {
     position: fixed;
     top: 0;
     width: 100vw;
@@ -297,8 +297,8 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media (width <= 1024px) {
-  body:not([data-breakpoint-preview-mode]) .single-operator,
-  body:not([data-breakpoint-preview-mode]).single-operator {
+  :where(body:not([data-breakpoint-preview-mode])) .single-operator,
+  :where(body:not([data-breakpoint-preview-mode])).single-operator {
     width: 100vw;
   }
 }
@@ -320,8 +320,8 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media (width >= 240px) {
-  body:not([data-breakpoint-preview-mode]) .single-operator,
-  body:not([data-breakpoint-preview-mode]).single-operator {
+  :where(body:not([data-breakpoint-preview-mode])) .single-operator,
+  :where(body:not([data-breakpoint-preview-mode])).single-operator {
     width: 100vw;
   }
 }
@@ -343,8 +343,8 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media (width<=1024px) {
-  body:not([data-breakpoint-preview-mode]) .poorly-formatted,
-  body:not([data-breakpoint-preview-mode]).poorly-formatted {
+  :where(body:not([data-breakpoint-preview-mode])) .poorly-formatted,
+  :where(body:not([data-breakpoint-preview-mode])).poorly-formatted {
     width: 100vw;
   }
 }
@@ -367,8 +367,8 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media (min-width: 500px) and (width<=1024px) {
-  body:not([data-breakpoint-preview-mode]) .combined-operator,
-  body:not([data-breakpoint-preview-mode]).combined-operator {
+  :where(body:not([data-breakpoint-preview-mode])) .combined-operator,
+  :where(body:not([data-breakpoint-preview-mode])).combined-operator {
     width: 90vw;
     margin: 0 5vw;
   }
@@ -396,8 +396,8 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media (240px <= width <= 1024px) {
-  body:not([data-breakpoint-preview-mode]) .range,
-  body:not([data-breakpoint-preview-mode]).range {
+  :where(body:not([data-breakpoint-preview-mode])) .range,
+  :where(body:not([data-breakpoint-preview-mode])).range {
     width: 90vw;
     margin: 0 5vw;
   }
@@ -421,8 +421,8 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media screen and (min-width: 768px), print {
-  body:not([data-breakpoint-preview-mode]) .mixed,
-  body:not([data-breakpoint-preview-mode]).mixed {
+  :where(body:not([data-breakpoint-preview-mode])) .mixed,
+  :where(body:not([data-breakpoint-preview-mode])).mixed {
     width: 80vw;
   }
 }
@@ -445,8 +445,8 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media (orientation: landscape) and (min-width: 768px) {
-  body:not([data-breakpoint-preview-mode]) .landscape,
-  body:not([data-breakpoint-preview-mode]).landscape {
+  :where(body:not([data-breakpoint-preview-mode])) .landscape,
+  :where(body:not([data-breakpoint-preview-mode])).landscape {
     height: 100vh;
     width: 100vw;
   }
@@ -471,8 +471,8 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media (orientation: landscape) {
-  body:not([data-breakpoint-preview-mode]) .landscape,
-  body:not([data-breakpoint-preview-mode]).landscape {
+  :where(body:not([data-breakpoint-preview-mode])) .landscape,
+  :where(body:not([data-breakpoint-preview-mode])).landscape {
     height: 100vh;
     width: 100vw;
   }
@@ -497,8 +497,8 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media (min-width: 320px) {
-  body:not([data-breakpoint-preview-mode]) .mobile, 
-  body:not([data-breakpoint-preview-mode]).mobile { 
+  :where(body:not([data-breakpoint-preview-mode])) .mobile, 
+  :where(body:not([data-breakpoint-preview-mode])).mobile { 
     width: 90vw; 
   }
 }
@@ -508,8 +508,8 @@ body[data-breakpoint-preview-mode] {
   }
 }
 @media (min-width: 768px) {
-  body:not([data-breakpoint-preview-mode]) .tablet,
-  body:not([data-breakpoint-preview-mode]).tablet {
+  :where(body:not([data-breakpoint-preview-mode])) .tablet,
+  :where(body:not([data-breakpoint-preview-mode])).tablet {
     width: 80vw; 
   }
 }
@@ -537,8 +537,8 @@ body[data-breakpoint-preview-mode] {
       const output = `
 @media screen {
   @media (min-width: 768px) {
-    body:not([data-breakpoint-preview-mode]) .nested, 
-    body:not([data-breakpoint-preview-mode]).nested {
+    :where(body:not([data-breakpoint-preview-mode])) .nested, 
+    :where(body:not([data-breakpoint-preview-mode])).nested {
       width: 80vw;
     }
   }
@@ -590,8 +590,8 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media (min-width: 500px) {
-  body:not([data-breakpoint-preview-mode]) .transformed,
-  body:not([data-breakpoint-preview-mode]).transformed {
+  :where(body:not([data-breakpoint-preview-mode])) .transformed,
+  :where(body:not([data-breakpoint-preview-mode])).transformed {
     width: 50vw;
   }
 }
@@ -650,43 +650,43 @@ body[data-breakpoint-preview-mode] {
 
       const output = `
 @media (min-width: 768px) {
-  body:not([data-breakpoint-preview-mode]) {
+  :where(body:not([data-breakpoint-preview-mode])) {
     font-size: 14px;
   }
-  body:not([data-breakpoint-preview-mode]) .toto,
-  body:not([data-breakpoint-preview-mode]).toto,
-  body:not([data-breakpoint-preview-mode]) {
+  :where(body:not([data-breakpoint-preview-mode])) .toto,
+  :where(body:not([data-breakpoint-preview-mode])).toto,
+  :where(body:not([data-breakpoint-preview-mode])) {
     font-size: 16px;
   }
-  body:not([data-breakpoint-preview-mode]).my-body {
+  :where(body:not([data-breakpoint-preview-mode])).my-body {
     font-size: 16px;
   }
-  body:not([data-breakpoint-preview-mode]).my-body {
+  :where(body:not([data-breakpoint-preview-mode])).my-body {
     font-size: 16px;
   }
-  body:not([data-breakpoint-preview-mode])#my-body.my-body {
+  :where(body:not([data-breakpoint-preview-mode]))#my-body.my-body {
     font-size: 16px;
   }
-  body:not([data-breakpoint-preview-mode]) #my-body,
-  body:not([data-breakpoint-preview-mode])#my-body {
+  :where(body:not([data-breakpoint-preview-mode])) #my-body,
+  :where(body:not([data-breakpoint-preview-mode]))#my-body {
     font-size: 16px;
   }
-  body:not([data-breakpoint-preview-mode]) .my-body,
-  body:not([data-breakpoint-preview-mode]).my-body {
+  :where(body:not([data-breakpoint-preview-mode])) .my-body,
+  :where(body:not([data-breakpoint-preview-mode])).my-body {
     font-size: 16px;
   }
-  body:not([data-breakpoint-preview-mode]).my-body p {
+  :where(body:not([data-breakpoint-preview-mode])).my-body p {
     color: green;
   }
-  body:not([data-breakpoint-preview-mode])#my-body.my-body p {
+  :where(body:not([data-breakpoint-preview-mode]))#my-body.my-body p {
     color: green;
   }
-  body:not([data-breakpoint-preview-mode]) #my-body p,
-  body:not([data-breakpoint-preview-mode])#my-body p {
+  :where(body:not([data-breakpoint-preview-mode])) #my-body p,
+  :where(body:not([data-breakpoint-preview-mode]))#my-body p {
     color: green;
   }
-  body:not([data-breakpoint-preview-mode]) .my-body p,
-  body:not([data-breakpoint-preview-mode]).my-body p {
+  :where(body:not([data-breakpoint-preview-mode])) .my-body p,
+  :where(body:not([data-breakpoint-preview-mode])).my-body p {
     color: green;
   }
 }
@@ -755,11 +755,11 @@ body.my-body .container {
   font-size: 16px;
 }
 .toto,
-body:not([data-breakpoint-preview-mode]),
+:where(body:not([data-breakpoint-preview-mode])),
 [data-apos-refreshable-body] {
   background-color: green;
 }
-body:not([data-breakpoint-preview-mode]).my-body .container {
+:where(body:not([data-breakpoint-preview-mode])).my-body .container {
   width: 50vw;
 }
 [data-apos-refreshable-body].my-body .container {
@@ -805,24 +805,24 @@ html.toto#tutu >   body#foo.bar {
 }
 `;
       const output = `
-body:not([data-breakpoint-preview-mode]),
+:where(body:not([data-breakpoint-preview-mode])),
 [data-apos-refreshable-body] {
   color: purple;
 }
 .foo .bar,
-body:not([data-breakpoint-preview-mode]) .apos-area p,
+:where(body:not([data-breakpoint-preview-mode])) .apos-area p,
 [data-apos-refreshable-body] .apos-area p {
   color: lightblue;
 }
-body:not([data-breakpoint-preview-mode]).my-body,
+:where(body:not([data-breakpoint-preview-mode])).my-body,
 [data-apos-refreshable-body].my-body {
   background-color: red;
 }
-body:not([data-breakpoint-preview-mode])#my-body.my-body,
+:where(body:not([data-breakpoint-preview-mode]))#my-body.my-body,
 [data-apos-refreshable-body]#my-body.my-body {
   color: green;
 }
-body:not([data-breakpoint-preview-mode])#foo.bar,
+:where(body:not([data-breakpoint-preview-mode]))#foo.bar,
 [data-apos-refreshable-body]#foo.bar {
   color: green;
 }

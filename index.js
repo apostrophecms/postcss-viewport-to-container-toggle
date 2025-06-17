@@ -36,7 +36,7 @@ const plugin = (opts = {}) => {
 
   // Create selectors
   const conditionalSelector = `${containerEl}[${modifierAttr}]`;
-  const conditionalNotSelector = `${containerEl}:not([${modifierAttr}])`;
+  const conditionalNotSelector = `:where(${containerEl}:not([${modifierAttr}]))`;
   const containerBodySelector = '[data-apos-refreshable-body]';
 
   // Create utility instances
