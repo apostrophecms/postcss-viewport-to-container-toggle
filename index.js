@@ -35,7 +35,7 @@ const plugin = (opts = {}) => {
   const { containerEl, modifierAttr } = options;
 
   // Create selectors
-  const conditionalSelector = `${containerEl}[${modifierAttr}]`;
+  const conditionalSelector = `:where(${containerEl}[${modifierAttr}])`;
   const conditionalNotSelector = `:where(${containerEl}:not([${modifierAttr}]))`;
   const containerBodySelector = '[data-apos-refreshable-body]';
 

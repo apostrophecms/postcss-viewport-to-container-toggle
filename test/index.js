@@ -177,7 +177,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   height: 60px;
 }`;
       const output = `
-body[data-breakpoint-preview-mode] {
+:where(body[data-breakpoint-preview-mode]) {
   position: relative;
   contain: layout;
 }
@@ -212,7 +212,7 @@ body[data-breakpoint-preview-mode] {
   }
 }`;
       const output = `
-body[data-breakpoint-preview-mode] {
+:where(body[data-breakpoint-preview-mode]) {
   position: relative;
   contain: layout;
 }
