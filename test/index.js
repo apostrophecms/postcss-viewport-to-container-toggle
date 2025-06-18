@@ -62,8 +62,8 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   line-height: calc(1.5 + 1vh);
   letter-spacing: 0.5vmin;
 }
-[data-apos-refreshable-body] .text,
-[data-apos-refreshable-body].text {
+:where([data-apos-refreshable-body]) .text,
+:where([data-apos-refreshable-body]).text {
   font-size: calc(16px + 2cqw);
   line-height: calc(1.5 + 1cqh);
   letter-spacing: 0.5cqi;
@@ -84,8 +84,8 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   font-size: clamp(1rem, 2vw + 1rem, 3rem);
   line-height: clamp(1.2, calc(1 + 2vh), 1.8);
 }
-[data-apos-refreshable-body] .fluid-text,
-[data-apos-refreshable-body].fluid-text {
+:where([data-apos-refreshable-body]) .fluid-text,
+:where([data-apos-refreshable-body]).fluid-text {
   font-size: clamp(1rem, 1rem + 2cqw, 3rem);
   line-height: clamp(1.2, calc(1 + 2cqh), 1.8);
 }`;
@@ -104,8 +104,8 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   color: red;
   font-size: 2vw;
 }
-[data-apos-refreshable-body] .foo,
-[data-apos-refreshable-body].foo {
+:where([data-apos-refreshable-body]) .foo,
+:where([data-apos-refreshable-body]).foo {
   color: red;
   font-size: 2cqw;
 }`;
@@ -122,8 +122,8 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 .decimals {
   font-size: 2.75vw;
 }
-[data-apos-refreshable-body] .decimals,
-[data-apos-refreshable-body].decimals {
+:where([data-apos-refreshable-body]) .decimals,
+:where([data-apos-refreshable-body]).decimals {
   font-size: 2.75cqw;
 }`;
 
@@ -139,8 +139,8 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 .zero-test {
   font-size: 0vw;
 }
-[data-apos-refreshable-body] .zero-test,
-[data-apos-refreshable-body].zero-test{
+:where([data-apos-refreshable-body]) .zero-test,
+:where([data-apos-refreshable-body]).zero-test{
   font-size: 0cqw;
 }`;
 
@@ -156,8 +156,8 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
 .nested-calc {
   font-size: clamp(1rem, calc(50vw - 2rem), calc(100vh - 4rem));
 }
-[data-apos-refreshable-body] .nested-calc,
-[data-apos-refreshable-body].nested-calc {
+:where([data-apos-refreshable-body]) .nested-calc,
+:where([data-apos-refreshable-body]).nested-calc {
   font-size: clamp(1rem, calc(50cqw - 2rem), calc(100cqh - 4rem));
 }`;
 
@@ -188,8 +188,8 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   width: 100vw;
   height: 60px;
 }
-[data-apos-refreshable-body] .fixed-header,
-[data-apos-refreshable-body].fixed-header {
+:where([data-apos-refreshable-body]) .fixed-header,
+:where([data-apos-refreshable-body]).fixed-header {
   position: sticky;
   --container-top: 0;
   top: var(--container-top);
@@ -254,8 +254,8 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   min-height: 100svh;
   max-width: 100lvw;
 }
-[data-apos-refreshable-body] .dynamic,
-[data-apos-refreshable-body].dynamic {
+:where([data-apos-refreshable-body]) .dynamic,
+:where([data-apos-refreshable-body]).dynamic {
   height: 100cqh;
   width: 100cqw;
   min-height: 100cqh;
@@ -276,8 +276,8 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   margin: calc(10px + 2vw - 1vh);
   padding: calc((100vw - 20px) / 2 + 1vmin);
 }
-[data-apos-refreshable-body] .complex,
-[data-apos-refreshable-body].complex {
+:where([data-apos-refreshable-body]) .complex,
+:where([data-apos-refreshable-body]).complex {
   margin: calc(10px + 2cqw - 1cqh);
   padding: calc((100cqw - 20px) / 2 + 1cqmin);
 }`;
@@ -691,20 +691,20 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   }
 }
 @container (min-width: 768px) {
-  [data-apos-refreshable-body] {
+  :where([data-apos-refreshable-body]) {
     font-size: 14px;
   }
   .toto,
-  [data-apos-refreshable-body] {
+  :where([data-apos-refreshable-body]) {
     font-size: 16px;
   }
-  [data-apos-refreshable-body].my-body {
+  :where([data-apos-refreshable-body]).my-body {
     font-size: 16px;
   }
-  [data-apos-refreshable-body].my-body {
+  :where([data-apos-refreshable-body]).my-body {
     font-size: 16px;
   }
-  [data-apos-refreshable-body]#my-body.my-body {
+  :where([data-apos-refreshable-body])#my-body.my-body {
     font-size: 16px;
   }
   #my-body {
@@ -713,10 +713,10 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   .my-body {
     font-size: 16px;
   }
-  [data-apos-refreshable-body].my-body p {
+  :where([data-apos-refreshable-body]).my-body p {
     color: green;
   }
-  [data-apos-refreshable-body]#my-body.my-body p {
+  :where([data-apos-refreshable-body])#my-body.my-body p {
     color: green;
   }
   #my-body p {
@@ -756,28 +756,28 @@ body.my-body .container {
 }
 .toto,
 :where(body:not([data-breakpoint-preview-mode])),
-[data-apos-refreshable-body] {
+:where([data-apos-refreshable-body]) {
   background-color: green;
 }
 :where(body:not([data-breakpoint-preview-mode])).my-body .container {
   width: 50vw;
 }
-[data-apos-refreshable-body].my-body .container {
+:where([data-apos-refreshable-body]).my-body .container {
   width: 50cqw;
 }
 .my-body .container p {
   width: 50vw;
 }
-[data-apos-refreshable-body] .my-body .container p,
-  [data-apos-refreshable-body].my-body .container p {
+:where([data-apos-refreshable-body]) .my-body .container p,
+  :where([data-apos-refreshable-body]).my-body .container p {
   width: 50cqw;
 }
 .toto {
   font-size: 16px;
   width: 50vw;
 }
-[data-apos-refreshable-body] .toto,
-  [data-apos-refreshable-body].toto {
+:where([data-apos-refreshable-body]) .toto,
+  :where([data-apos-refreshable-body]).toto {
   font-size: 16px;
   width: 50cqw;
 }
@@ -806,24 +806,24 @@ html.toto#tutu >   body#foo.bar {
 `;
       const output = `
 :where(body:not([data-breakpoint-preview-mode])),
-[data-apos-refreshable-body] {
+:where([data-apos-refreshable-body]) {
   color: purple;
 }
 .foo .bar,
 :where(body:not([data-breakpoint-preview-mode])) .apos-area p,
-[data-apos-refreshable-body] .apos-area p {
+:where([data-apos-refreshable-body]) .apos-area p {
   color: lightblue;
 }
 :where(body:not([data-breakpoint-preview-mode])).my-body,
-[data-apos-refreshable-body].my-body {
+:where([data-apos-refreshable-body]).my-body {
   background-color: red;
 }
 :where(body:not([data-breakpoint-preview-mode]))#my-body.my-body,
-[data-apos-refreshable-body]#my-body.my-body {
+:where([data-apos-refreshable-body])#my-body.my-body {
   color: green;
 }
 :where(body:not([data-breakpoint-preview-mode]))#foo.bar,
-[data-apos-refreshable-body]#foo.bar {
+:where([data-apos-refreshable-body])#foo.bar {
   color: green;
 }
 `;
@@ -842,8 +842,8 @@ html.toto#tutu >   body#foo.bar {
       const input = '.debug { width: 100vw; }';
       const output = `
 .debug { width: 100vw; }
-[data-apos-refreshable-body] .debug,
-[data-apos-refreshable-body].debug { width: 100cqw; }`;
+:where([data-apos-refreshable-body]) .debug,
+:where([data-apos-refreshable-body]).debug { width: 100cqw; }`;
 
       await run(plugin, input, output, debugOpts);
     });
