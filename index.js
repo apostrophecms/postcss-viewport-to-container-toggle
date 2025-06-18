@@ -35,9 +35,9 @@ const plugin = (opts = {}) => {
   const { containerEl, modifierAttr } = options;
 
   // Create selectors
-  const conditionalSelector = `${containerEl}[${modifierAttr}]`;
-  const conditionalNotSelector = `${containerEl}:not([${modifierAttr}])`;
-  const containerBodySelector = '[data-apos-refreshable-body]';
+  const conditionalSelector = `:where(${containerEl}[${modifierAttr}])`;
+  const conditionalNotSelector = `:where(${containerEl}:not([${modifierAttr}]))`;
+  const containerBodySelector = ':where([data-apos-refreshable-body])';
 
   // Create utility instances
   const unitConverter = createUnitConverter({ units: options.units });
