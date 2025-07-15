@@ -2,6 +2,7 @@
 const createSelectorHelper = ({ modifierAttr }) => {
   const bodyRegex = /^body|^html.*\s+body|^html.*\s*>\s*body/;
   const tagRegex = /^\.|^#|^\[|^:/;
+  const wrapInWhere = (selector) => `:where(${selector})`;
 
   const addTargetToSelectors = (
     selector,
@@ -12,7 +13,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
       .reduce((acc, part) => {
         const trimmed = part.trim();
         if (!trimmed.match(bodyRegex)) {
-          acc.push(`${target} ${trimmed}`);
+          acc.push(`${wrapInWhere(target)} ${trimmed}`);
         }
 
         const bodyLevelSelector = getBodyLevelSelector(trimmed, target);
@@ -68,7 +69,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
     // in case the body has this identifier
     const noTagSelector = selector.match(tagRegex);
     if (noTagSelector) {
-      return `${target}${selector}`;
+      return `${wrapInWhere(target)}${selector}`;
     }
 
     return null;
