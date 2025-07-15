@@ -177,7 +177,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   height: 60px;
 }`;
       const output = `
-:where(body[data-breakpoint-preview-mode]) {
+body[data-breakpoint-preview-mode] {
   position: relative;
   contain: layout;
 }
@@ -212,7 +212,7 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   }
 }`;
       const output = `
-:where(body[data-breakpoint-preview-mode]) {
+body[data-breakpoint-preview-mode] {
   position: relative;
   contain: layout;
 }
@@ -640,22 +640,22 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
     color: green;
   }
   #my-body p {
-    color: green;
+    color: purple;
   }
   .my-body p {
-    color: green;
+    color: purple;
   }
 }
 `;
 
       const output = `
 @media (min-width: 768px) {
-  :where(body:not([data-breakpoint-preview-mode])) {
+  body:not([data-breakpoint-preview-mode]) {
     font-size: 14px;
   }
   :where(body:not([data-breakpoint-preview-mode])) .toto,
   :where(body:not([data-breakpoint-preview-mode])).toto,
-  :where(body:not([data-breakpoint-preview-mode])) {
+  body:not([data-breakpoint-preview-mode]) {
     font-size: 16px;
   }
   :where(body:not([data-breakpoint-preview-mode])).my-body {
@@ -683,28 +683,28 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   }
   :where(body:not([data-breakpoint-preview-mode])) #my-body p,
   :where(body:not([data-breakpoint-preview-mode]))#my-body p {
-    color: green;
+    color: purple;
   }
   :where(body:not([data-breakpoint-preview-mode])) .my-body p,
   :where(body:not([data-breakpoint-preview-mode])).my-body p {
-    color: green;
+    color: purple;
   }
 }
 @container (min-width: 768px) {
-  :where([data-apos-refreshable-body]) {
+  [data-apos-refreshable-body] {
     font-size: 14px;
   }
   .toto,
-  :where([data-apos-refreshable-body]) {
+  [data-apos-refreshable-body] {
     font-size: 16px;
   }
-  :where([data-apos-refreshable-body]).my-body {
+  [data-apos-refreshable-body].my-body {
     font-size: 16px;
   }
-  :where([data-apos-refreshable-body]).my-body {
+  [data-apos-refreshable-body].my-body {
     font-size: 16px;
   }
-  :where([data-apos-refreshable-body])#my-body.my-body {
+  [data-apos-refreshable-body]#my-body.my-body {
     font-size: 16px;
   }
   #my-body {
@@ -713,17 +713,17 @@ describe('postcss-viewport-to-container-toggle additional features', () => {
   .my-body {
     font-size: 16px;
   }
-  :where([data-apos-refreshable-body]).my-body p {
+  [data-apos-refreshable-body].my-body p {
     color: green;
   }
-  :where([data-apos-refreshable-body])#my-body.my-body p {
+  [data-apos-refreshable-body]#my-body.my-body p {
     color: green;
   }
   #my-body p {
-    color: green;
+    color: purple;
   }
   .my-body p {
-    color: green;
+    color: purple;
   }
 }`;
 
@@ -755,11 +755,11 @@ body.my-body .container {
   font-size: 16px;
 }
 .toto,
-:where(body:not([data-breakpoint-preview-mode])),
-:where([data-apos-refreshable-body]) {
+body:not([data-breakpoint-preview-mode]),
+[data-apos-refreshable-body] {
   background-color: green;
 }
-:where(body:not([data-breakpoint-preview-mode])).my-body .container {
+body:not([data-breakpoint-preview-mode]).my-body .container {
   width: 50vw;
 }
 :where([data-apos-refreshable-body]).my-body .container {
@@ -805,25 +805,25 @@ html.toto#tutu >   body#foo.bar {
 }
 `;
       const output = `
-:where(body:not([data-breakpoint-preview-mode])),
-:where([data-apos-refreshable-body]) {
+body:not([data-breakpoint-preview-mode]),
+[data-apos-refreshable-body] {
   color: purple;
 }
 .foo .bar,
-:where(body:not([data-breakpoint-preview-mode])) .apos-area p,
-:where([data-apos-refreshable-body]) .apos-area p {
+body:not([data-breakpoint-preview-mode]) .apos-area p,
+[data-apos-refreshable-body] .apos-area p {
   color: lightblue;
 }
-:where(body:not([data-breakpoint-preview-mode])).my-body,
-:where([data-apos-refreshable-body]).my-body {
+body:not([data-breakpoint-preview-mode]).my-body,
+[data-apos-refreshable-body].my-body {
   background-color: red;
 }
-:where(body:not([data-breakpoint-preview-mode]))#my-body.my-body,
-:where([data-apos-refreshable-body])#my-body.my-body {
+body:not([data-breakpoint-preview-mode])#my-body.my-body,
+[data-apos-refreshable-body]#my-body.my-body {
   color: green;
 }
-:where(body:not([data-breakpoint-preview-mode]))#foo.bar,
-:where([data-apos-refreshable-body])#foo.bar {
+body:not([data-breakpoint-preview-mode])#foo.bar,
+[data-apos-refreshable-body]#foo.bar {
   color: green;
 }
 `;
