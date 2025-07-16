@@ -12,11 +12,12 @@ const createSelectorHelper = ({ modifierAttr }) => {
       .split(',')
       .reduce((acc, part) => {
         const trimmed = part.trim();
-        if (!trimmed.match(bodyRegex)) {
+        const isBodySelector = trimmed.match(bodyRegex);
+        if (isBodySelector) {
           acc.push(`${wrapInWhere(target)} ${trimmed}`);
         }
 
-        const bodyLevelSelector = getBodyLevelSelector(trimmed, target);
+        const bodyLevelSelector = getBodyLevelSelector(trimmed, target, isBodySelector);
         if (bodyLevelSelector) {
           acc.push(bodyLevelSelector);
         }
@@ -55,8 +56,8 @@ const createSelectorHelper = ({ modifierAttr }) => {
     return updatedSelector.join(',\n  ');
   };
 
-  const getBodyLevelSelector = (selector, target) => {
-    if (selector.match(bodyRegex)) {
+  const getBodyLevelSelector = (selector, target, isBodySelector) => {
+    if (isBodySelector) {
       selector = selector.replace(bodyRegex, '');
 
       // Selector is a body without identifiers, we put style in the body directly
@@ -69,7 +70,8 @@ const createSelectorHelper = ({ modifierAttr }) => {
     // in case the body has this identifier
     const noTagSelector = selector.match(tagRegex);
     if (noTagSelector) {
-      return `${wrapInWhere(target)}${selector}`;
+      const targetSelector = isBodySelector ? target : wrapInWhere(target);
+      return `${targetSelector}${selector}`;
     }
 
     return null;
