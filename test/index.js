@@ -658,13 +658,13 @@ body[data-breakpoint-preview-mode] {
   body:not([data-breakpoint-preview-mode]) {
     font-size: 16px;
   }
-  :where(body:not([data-breakpoint-preview-mode])).my-body {
+  body:not([data-breakpoint-preview-mode]).my-body {
     font-size: 16px;
   }
-  :where(body:not([data-breakpoint-preview-mode])).my-body {
+  body:not([data-breakpoint-preview-mode]).my-body {
     font-size: 16px;
   }
-  :where(body:not([data-breakpoint-preview-mode]))#my-body.my-body {
+  body:not([data-breakpoint-preview-mode])#my-body.my-body {
     font-size: 16px;
   }
   :where(body:not([data-breakpoint-preview-mode])) #my-body,
@@ -675,10 +675,10 @@ body[data-breakpoint-preview-mode] {
   :where(body:not([data-breakpoint-preview-mode])).my-body {
     font-size: 16px;
   }
-  :where(body:not([data-breakpoint-preview-mode])).my-body p {
+  body:not([data-breakpoint-preview-mode]).my-body p {
     color: green;
   }
-  :where(body:not([data-breakpoint-preview-mode]))#my-body.my-body p {
+  body:not([data-breakpoint-preview-mode])#my-body.my-body p {
     color: green;
   }
   :where(body:not([data-breakpoint-preview-mode])) #my-body p,
@@ -762,7 +762,7 @@ body:not([data-breakpoint-preview-mode]),
 body:not([data-breakpoint-preview-mode]).my-body .container {
   width: 50vw;
 }
-:where([data-apos-refreshable-body]).my-body .container {
+[data-apos-refreshable-body].my-body .container {
   width: 50cqw;
 }
 .my-body .container p {

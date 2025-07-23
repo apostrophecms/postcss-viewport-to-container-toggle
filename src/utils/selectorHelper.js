@@ -13,7 +13,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
       .reduce((acc, part) => {
         const trimmed = part.trim();
         const isBodySelector = trimmed.match(bodyRegex);
-        if (isBodySelector) {
+        if (!isBodySelector) {
           acc.push(`${wrapInWhere(target)} ${trimmed}`);
         }
 
