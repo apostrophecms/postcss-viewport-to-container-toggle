@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixed
+
+* Add `:where()` pseudo-class back to fix specificity issues.
+
 ## 2.0.0 (2025-06-06)
 
 ### Adds
