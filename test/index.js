@@ -1,13 +1,14 @@
 const postcss = require('postcss');
 const cssnano = require('cssnano');
 const { equal, deepEqual } = require('node:assert');
+const assert = require('assert');
 const plugin = require('../index.js');
 const opts = { modifierAttr: 'data-breakpoint-preview-mode' };
 
 let currentFileName = '';
 
 // Hook into Mocha's test context
-beforeEach(function() {
+beforeEach(function () {
   currentFileName = this.currentTest.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 });
 
@@ -550,6 +551,80 @@ body[data-breakpoint-preview-mode] {
 }`;
 
       await run(plugin, input, output, opts);
+    });
+
+    it('should convert nested media queries to container queries (Tailwind)', async () => {
+      const input = `
+    .sm\\:text-lg {
+      @media (width >= 40rem) {
+        font-size: var(--text-lg);
+        line-height: 1.5;
+      }
+    }
+  `;
+
+      const result = await postcss([ plugin(opts) ]).process(input, { from: undefined });
+
+      // Check that container query was created
+      assert.ok(result.css.includes('@container (min-width: 40rem)'),
+        'Should contain container query');
+
+      // Check that not selector was added
+      assert.ok(result.css.includes(':where(body:not([data-breakpoint-preview-mode]))'),
+        'Should contain not selector for media query');
+
+      // Check that both font-size declarations exist (one in media, one in container)
+      const fontSizeMatches = result.css.match(/font-size: var\(--text-lg\)/g);
+      assert.strictEqual(fontSizeMatches.length, 2,
+        'Should have font-size in both media and container queries');
+    });
+
+    it('should handle multiple nested breakpoints', async () => {
+      const input = `
+    .responsive {
+      @media (width >= 640px) {
+        padding: 2rem;
+      }
+      @media (width >= 1024px) {
+        padding: 4rem;
+      }
+    }
+  `;
+
+      const result = await postcss([ plugin(opts) ]).process(input, { from: undefined });
+
+      // Check that both container queries were created
+      assert.ok(result.css.includes('@container (min-width: 640px)'),
+        'Should contain first container query');
+      assert.ok(result.css.includes('@container (min-width: 1024px)'),
+        'Should contain second container query');
+
+      // Check that not selectors were added
+      const notSelectorMatches = result.css.match(/:where\(body:not\(\[data-breakpoint-preview-mode\]\)\)/g);
+      assert.ok(notSelectorMatches && notSelectorMatches.length >= 2,
+        'Should have not selectors for both media queries');
+    });
+
+    it('should preserve original selector in nested media queries', async () => {
+      const input = `
+    .lg\\:flex {
+      @media (width >= 64rem) {
+        display: flex;
+      }
+    }
+  `;
+
+      const result = await postcss([ plugin(opts) ]).process(input, { from: undefined });
+
+      // Check that the selector is preserved correctly (with escaped colon)
+      assert.ok(result.css.includes('.lg\\:flex'),
+        'Should preserve escaped selector');
+
+      // Both versions should exist
+      assert.ok(result.css.includes('@media (width >= 64rem)'),
+        'Should preserve media query');
+      assert.ok(result.css.includes('@container (min-width: 64rem)'),
+        'Should create container query');
     });
   });
 

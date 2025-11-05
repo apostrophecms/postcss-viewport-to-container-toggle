@@ -63,9 +63,31 @@ const createDebugUtils = ({ debug, debugFilter }) => {
       Array.from(stats.sourceFiles).join('\n  '));
   };
 
+  /**
+ * Logs detailed information about media query processing
+ */
+  const logMediaQuery = (atRule, context = '') => {
+    if (!debug) {
+      return;
+    }
+
+    const source = atRule.source?.input?.file || 'unknown source';
+    if (debugFilter && !source.includes(debugFilter)) {
+      return;
+    }
+
+    console.log(`\n[Media Query ${context}] (${source})`);
+    console.log('  Params:', atRule.params);
+    console.log('  Parent type:', atRule.parent?.type);
+    console.log('  Parent selector:', atRule.parent?.selector || 'N/A');
+    console.log('  Is nested:', atRule.parent?.type === 'rule');
+    console.log('  Content preview:', atRule.toString().substring(0, 200));
+  };
+
   return {
     stats,
     log,
+    logMediaQuery,
     printSummary
   };
 };
