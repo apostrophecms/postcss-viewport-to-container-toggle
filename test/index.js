@@ -626,6 +626,64 @@ body[data-breakpoint-preview-mode] {
       assert.ok(result.css.includes('@container (min-width: 64rem)'),
         'Should create container query');
     });
+
+    // This test should pass, at least approximately
+    // to show not selector is added at the root parent level
+    it('should handle deeply nested media queries', async () => {
+      const input = `
+.foo {
+  .bar {
+    .inside {
+      @media screen and (max-width: 500px) {
+        margin: 2rem;
+      }
+      
+      color: purple;
+    }
+    @media (width > 800px) {
+      top: 5rem;
+    }
+  }
+}`;
+
+      const output = `
+:where(body:not([data-breakpoint-preview-mode])) .foo,
+:where(body:not([data-breakpoint-preview-mode])).foo {
+  .bar {
+    .inside {
+      @media screen and (max-width: 500px) {
+        margin: 2rem;
+      }
+    }
+  }
+}
+
+:where(body:not([data-breakpoint-preview-mode])) .foo,
+:where(body:not([data-breakpoint-preview-mode])).foo {
+  .bar {
+    @media (width > 800px) {
+      top: 5rem;
+    }
+  }
+}
+
+.foo {
+  .bar {
+    .inside {
+      @media screen and (max-width: 500px) {
+        margin: 2rem;
+      }
+      
+      color: purple;
+    }
+    @media (width > 800px) {
+      top: 5rem;
+    }
+  }
+}`;
+
+      await run(plugin, input, output, opts);
+    });
   });
 
   // Print-only queries
