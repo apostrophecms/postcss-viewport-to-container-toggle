@@ -12,7 +12,7 @@ beforeEach(function () {
 });
 
 async function formatCSS(css) {
-  const result = await postcss([cssnano({ preset: 'default' })])
+  const result = await postcss([ cssnano({ preset: 'default' }) ])
     .process(css, {
       from: `${currentFileName}_formatted.css`
     });
@@ -21,7 +21,7 @@ async function formatCSS(css) {
 
 // Enhanced run helper with detailed output on failure
 async function run(plugin, input, output, opts = {}) {
-  const result = await postcss([plugin(opts)])
+  const result = await postcss([ plugin(opts) ])
     .process(input, {
       from: `${currentFileName}.css`
     });
