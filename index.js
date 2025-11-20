@@ -221,6 +221,7 @@ const plugin = (opts = {}) => {
             if (isNested) {
               debugUtils.log('Processing nested media query declarations...', atRule);
 
+              // First, build the container query declarations from the nested media
               atRule.each(node => {
                 if (node.type === 'decl') {
                   debugUtils.log(`  Processing declaration: ${node.prop}: ${node.value}`, atRule);
@@ -231,10 +232,11 @@ const plugin = (opts = {}) => {
                   });
 
                   // Convert viewport units if needed
-                  let value = containerDecl.value;
-                  if (Object.keys(unitConverter.units)
-                    .some(unit => value.includes(unit))) {
-                    value = unitConverter.convertUnitsInExpression(value);
+                  const convertibleUnits = Object.keys(unitConverter.units);
+
+                  if (convertibleUnits.some(unit => containerDecl.value.includes(unit))) {
+                    const value = unitConverter
+                      .convertUnitsInExpression(containerDecl.value);
                     containerDecl.value = value;
                     debugUtils.log(`  Converted value to: ${value}`, atRule);
                   }
@@ -243,34 +245,48 @@ const plugin = (opts = {}) => {
                 }
               });
 
-              debugUtils.log(`  Total declarations in container query: ${containerQuery.nodes?.length || 0}`, atRule);
+              debugUtils.log(
+                `  Total declarations in container query: ${containerQuery.nodes?.length || 0}`,
+                atRule
+              );
 
-              // Add container query inside the parent rule, after the media query
-              atRule.after(containerQuery);
+              // Walk up to the outer-most rule so we can apply the body check
+              // at the first level selector (e.g. `.foo` in `.foo { .bar { ... } }`)
+              let rootRule = atRule.parent;
+              while (rootRule && rootRule.parent && rootRule.parent.type === 'rule') {
+                rootRule = rootRule.parent;
+              }
 
-              const parentRule = atRule.parent;
-              const originalSelector = parentRule.selector;
+              const originalSelector = rootRule.selector;
 
-              // Create a new rule with the not selector wrapping
-              const conditionalRule = new helpers.Rule({
-                selector: selectorHelper
-                  .addTargetToSelectors(
-                    originalSelector,
-                    conditionalNotSelector
-                  ),
-                source: parentRule.source,
+              // Clone the whole rule tree and attach the :where(body:not(...))
+              // check only to the first-level selector
+              const conditionalRoot = rootRule.clone({
+                source: rootRule.source,
                 from: helpers.result.opts.from
               });
 
-              // Move the media query into the conditional rule
-              const clonedMedia = atRule.clone();
-              clonedMedia[processed] = true; // ← MARK AS PROCESSED!
-              conditionalRule.append(clonedMedia);
+              conditionalRoot.selector = selectorHelper.addTargetToSelectors(
+                originalSelector,
+                conditionalNotSelector
+              );
 
-              // Add the conditional rule before the parent
-              parentRule.before(conditionalRule);
+              // Make sure we don't re-process the cloned media queries
+              conditionalRoot.walkAtRules('media', clonedAtRule => {
+                clonedAtRule[processed] = true;
+              });
 
-              // Remove the media query from the original parent
+              // Insert the conditional rule tree before the original one
+              if (rootRule.parent) {
+                rootRule.parent.insertBefore(rootRule, conditionalRoot);
+              }
+
+              // Add container query inside the original parent rule,
+              // after the media query
+              atRule.after(containerQuery);
+
+              // Remove the media query from the original rule tree so viewport
+              // media runs only under the conditionalRoot version
               atRule.remove();
 
               debugUtils.log('Added conditional wrapper for nested media query', atRule);
