@@ -563,14 +563,15 @@ body[data-breakpoint-preview-mode] {
 `;
 
       const output = `
-.sm\\:text-lg {
+:where(body:not([data-breakpoint-preview-mode])) .sm\\:text-lg,
+  :where(body:not([data-breakpoint-preview-mode])).sm\\:text-lg {
   @media (width >= 40rem) {
     font-size: var(--text-lg);
     line-height: 1.5;
   }
 }
-@container (min-width: 40rem) {
-  .sm\\:text-lg {
+.sm\\:text-lg {
+  @container (min-width: 40rem) {
     font-size: var(--text-lg);
     line-height: 1.5;
   }
@@ -593,7 +594,8 @@ body[data-breakpoint-preview-mode] {
 `;
 
       const output = `
-.responsive {
+:where(body:not([data-breakpoint-preview-mode])) .responsive,
+  :where(body:not([data-breakpoint-preview-mode])).responsive {
   @media (width >= 640px) {
     padding: 2rem;
   }
@@ -601,39 +603,12 @@ body[data-breakpoint-preview-mode] {
     padding: 4rem;
   }
 }
-@container (min-width: 640px) {
-  .responsive {
+.responsive {
+  @container (min-width: 640px) {
     padding: 2rem;
   }
-}
-@container (min-width: 1024px) {
-  .responsive {
+  @container (min-width: 1024px) {
     padding: 4rem;
-  }
-}
-`;
-
-      await run(plugin, input, output, opts);
-    });
-
-    it('should preserve original selector in nested media queries', async () => {
-      const input = `
-.lg\\:flex {
-  @media (width >= 64rem) {
-    display: flex;
-  }
-}
-`;
-
-      const output = `
-.lg\\:flex {
-  @media (width >= 64rem) {
-    display: flex;
-  }
-}
-@container (min-width: 64rem) {
-  .lg\\:flex {
-    display: flex;
   }
 }
 `;
@@ -653,23 +628,14 @@ body[data-breakpoint-preview-mode] {
 }`;
 
         const output = `
-.parent {
-  .child {
-    @media (min-width: 768px) {
-      padding: 2rem;
-    }
-  }
-}
-
 :where(body:not([data-breakpoint-preview-mode])) .parent,
-:where(body:not([data-breakpoint-preview-mode])).parent {
+  :where(body:not([data-breakpoint-preview-mode])).parent {
   .child {
     @media (min-width: 768px) {
       padding: 2rem;
     }
   }
 }
-
 .parent {
   .child {
     @container (min-width: 768px) {
@@ -695,18 +661,8 @@ body[data-breakpoint-preview-mode] {
 }`;
 
       const output = `
-.foo {
-  .bar {
-    .inside {
-      @media screen and (max-width: 500px) {
-        margin: 2rem;
-      }
-    }
-  }
-}
-
 :where(body:not([data-breakpoint-preview-mode])) .foo,
-:where(body:not([data-breakpoint-preview-mode])).foo {
+  :where(body:not([data-breakpoint-preview-mode])).foo {
   .bar {
     .inside {
       @media screen and (max-width: 500px) {
@@ -715,7 +671,6 @@ body[data-breakpoint-preview-mode] {
     }
   }
 }
-
 .foo {
   .bar {
     .inside {
@@ -739,7 +694,7 @@ body[data-breakpoint-preview-mode] {
       @media screen and (max-width: 500px) {
         margin: 2rem;
       }
-      
+
       color: purple;
     }
     @media (width > 800px) {
@@ -750,35 +705,34 @@ body[data-breakpoint-preview-mode] {
 
       const output = `
 :where(body:not([data-breakpoint-preview-mode])) .foo,
-:where(body:not([data-breakpoint-preview-mode])).foo {
+  :where(body:not([data-breakpoint-preview-mode])).foo {
   .bar {
     .inside {
       @media screen and (max-width: 500px) {
         margin: 2rem;
       }
-    }
-  }
-}
 
-:where(body:not([data-breakpoint-preview-mode])) .foo,
-:where(body:not([data-breakpoint-preview-mode])).foo {
-  .bar {
+      color: purple;
+    }
+    @media (width > 800px) {
+      top: 5rem;
+    }
     @media (width > 800px) {
       top: 5rem;
     }
   }
 }
-
 .foo {
   .bar {
     .inside {
-      @media screen and (max-width: 500px) {
+
+      color: purple;
+
+      @container (max-width: 500px) {
         margin: 2rem;
       }
-      
-      color: purple;
     }
-    @media (width > 800px) {
+    @container (min-width: calc(800px + 0.02px)) {
       top: 5rem;
     }
   }

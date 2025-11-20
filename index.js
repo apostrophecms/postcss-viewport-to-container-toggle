@@ -58,83 +58,6 @@ const plugin = (opts = {}) => {
   let hasAddedContainerContext = false;
 
   /**
-   * Walks up the parent chain to find the root-level rule (first rule whose parent is root)
-   *
-   * @param {Object} node - The starting PostCSS node
-   * @returns {Object|null} The root-level rule, or null if not found
-   */
-  const findRootRule = (node) => {
-    let current = node;
-    let lastRule = null;
-
-    while (current && current.type !== 'root') {
-      if (current.type === 'rule') {
-        lastRule = current;
-      }
-      current = current.parent;
-    }
-
-    // lastRule should now be the top-level rule whose parent is root
-    return lastRule;
-  };
-
-  /**
-   * Clones an entire nested structure from a root rule down to a target node,
-   * preserving all intermediate nesting levels
-   *
-   * @param {Object} rootRule - The top-level rule to start cloning from
-   * @param {Object} targetNode - The node we're trying to reach (e.g., a media query)
-   * @param {Object} helpers - PostCSS helpers
-   * @returns {Object} The cloned root rule with nested structure
-   */
-  const cloneNestedStructure = (rootRule, targetNode, helpers) => {
-    // Build path from root to target
-    const path = [];
-    let current = targetNode;
-
-    while (current && current !== rootRule) {
-      path.unshift(current);
-      current = current.parent;
-    }
-
-    // Clone the root rule
-    const clonedRoot = rootRule.clone({
-      source: rootRule.source,
-      from: helpers.result.opts.from
-    });
-
-    // Navigate through the cloned structure following the path
-    let currentCloned = clonedRoot;
-    for (const pathNode of path) {
-      if (pathNode.type === 'rule') {
-        // Find the corresponding cloned child rule
-        const childSelector = pathNode.selector;
-        currentCloned = currentCloned.nodes.find(
-          node => node.type === 'rule' && node.selector === childSelector
-        );
-      } else if (pathNode.type === 'atrule') {
-        // Find the corresponding cloned at-rule
-        const childName = pathNode.name;
-        const childParams = pathNode.params;
-        currentCloned = currentCloned.nodes.find(
-          node => node.type === 'atrule' &&
-            node.name === childName &&
-            node.params === childParams
-        );
-      }
-
-      if (!currentCloned) {
-        break;
-      }
-    }
-
-    return {
-      clonedRoot,
-      targetInClone: currentCloned
-    };
-  };
-
-  /**
  * Adds a container context with `position: relative` and `contain: layout` if required.
  *
  * @param {Object} root - The PostCSS root node.
@@ -323,60 +246,151 @@ const plugin = (opts = {}) => {
 
               const parentRule = atRule.parent;
 
-              // Find the root-level rule (topmost rule whose parent is root)
-              const rootRule = findRootRule(atRule);
+              // Find the root nesting level
+              let rootParent = parentRule;
+              let nestingDepth = 0;
+              while (rootParent.parent && rootParent.parent.type === 'rule') {
+                rootParent = rootParent.parent;
+                nestingDepth++;
+              }
 
-              if (rootRule) {
-                debugUtils.log(`  Found root rule: ${rootRule.selector}`, atRule);
-
-                // Clone BEFORE adding container query
-                const { clonedRoot } = cloneNestedStructure(rootRule, atRule, helpers);
-
-                // Apply the body check selector to the root level only
-                clonedRoot.selector = selectorHelper.addTargetToSelectors(
-                  clonedRoot.selector,
-                  conditionalNotSelector
-                );
-
-                // Mark all media queries in the cloned structure as processed
-                clonedRoot.walkAtRules('media', (clonedMedia) => {
-                  clonedMedia[processed] = true;
-                });
-
-                // Insert the cloned structure before the original root rule
-                rootRule.before(clonedRoot);
-
-                debugUtils.log('Added conditional wrapper at root level for nested media query', atRule);
-              } else {
-                // Fallback to old behavior if we can't find root
-                debugUtils.log('Could not find root rule, using fallback', atRule);
+              // For single-level nesting (Tailwind case), use simple approach
+              if (nestingDepth === 0) {
+                // Add container query inside the parent rule, after the media query
+                atRule.after(containerQuery);
 
                 const originalSelector = parentRule.selector;
 
-                const conditionalRule = new helpers.Rule({
-                  selector: selectorHelper
-                    .addTargetToSelectors(
-                      originalSelector,
-                      conditionalNotSelector
-                    ),
-                  source: parentRule.source,
-                  from: helpers.result.opts.from
-                });
+                let conditionalRule = null;
+                let alreadyHasWrapper = false;
+
+                let prevNode = parentRule.prev();
+                const targetSelector = selectorHelper
+                  .addTargetToSelectors(
+                    originalSelector,
+                    conditionalNotSelector
+                  );
+
+                while (prevNode) {
+                  if (prevNode.type === 'rule' && prevNode.selector === targetSelector) {
+                    conditionalRule = prevNode;
+                    alreadyHasWrapper = true;
+                    debugUtils.log('Found existing conditional wrapper, reusing it', atRule);
+                    break;
+                  }
+                  prevNode = prevNode.prev();
+                }
+
+                if (!alreadyHasWrapper) {
+                  conditionalRule = new helpers.Rule({
+                    selector: targetSelector,
+                    source: parentRule.source,
+                    from: helpers.result.opts.from
+                  });
+
+                  parentRule.before(conditionalRule);
+                  debugUtils.log('Created new conditional wrapper', atRule);
+                }
 
                 const clonedMedia = atRule.clone();
                 clonedMedia[processed] = true;
                 conditionalRule.append(clonedMedia);
+                atRule.remove();
 
-                parentRule.before(conditionalRule);
+                debugUtils.log('Added conditional wrapper for nested media query', atRule);
+
+              } else {
+                // Multi-level nesting - hoist to root with full structure
+                const rootSelector = rootParent.selector;
+
+                // Check if wrapper exists at root level
+                let conditionalRule = null;
+                let alreadyHasWrapper = false;
+
+                let prevNode = rootParent.prev();
+                const targetSelector = selectorHelper
+                  .addTargetToSelectors(
+                    rootSelector,
+                    conditionalNotSelector
+                  );
+
+                while (prevNode) {
+                  if (prevNode.type === 'rule' && prevNode.selector === targetSelector) {
+                    conditionalRule = prevNode;
+                    alreadyHasWrapper = true;
+                    debugUtils.log('Found existing conditional wrapper, reusing it', atRule);
+                    break;
+                  }
+                  prevNode = prevNode.prev();
+                }
+
+                if (!alreadyHasWrapper) {
+                  // Create wrapper with full nested structure
+                  conditionalRule = new helpers.Rule({
+                    selector: targetSelector,
+                    source: rootParent.source,
+                    from: helpers.result.opts.from
+                  });
+
+                  // Clone children of root parent (before container query is added)
+                  rootParent.each(node => {
+                    const clonedNode = node.clone();
+                    // Mark any media queries as processed
+                    if (clonedNode.type === 'atrule' && clonedNode.name === 'media') {
+                      clonedNode[processed] = true;
+                    }
+                    clonedNode.walkAtRules('media', (mediaRule) => {
+                      mediaRule[processed] = true;
+                    });
+                    conditionalRule.append(clonedNode);
+                  });
+
+                  rootParent.before(conditionalRule);
+                  debugUtils.log('Created new conditional wrapper at root level', atRule);
+                } else {
+                  // Wrapper exists, add media query to matching nested location
+                  const targetInWrapper = conditionalRule.first;
+                  if (targetInWrapper && targetInWrapper.type === 'rule') {
+                    // Build path from parentRule to rootParent
+                    const pathSelectors = [];
+                    let current = parentRule;
+                    while (current !== rootParent) {
+                      pathSelectors.unshift(current.selector);
+                      current = current.parent;
+                    }
+
+                    // Navigate to matching location in wrapper
+                    let navNode = targetInWrapper;
+                    for (const selector of pathSelectors) {
+                      let found = false;
+                      navNode.each(node => {
+                        if (node.type === 'rule' && node.selector === selector) {
+                          navNode = node;
+                          found = true;
+                          return false;
+                        }
+                      });
+                      if (!found) {
+                        break;
+                      }
+                    }
+
+                    // Add cloned media to correct location
+                    const clonedMedia = atRule.clone();
+                    clonedMedia[processed] = true;
+                    navNode.append(clonedMedia);
+                  }
+                }
+
+                // Remove from original
+                atRule.remove();
+
+                // Now add container query to original (after cloning)
+                parentRule.append(containerQuery);
+
+                debugUtils.log('Added conditional wrapper for nested media query', atRule);
               }
 
-              // Remove the media query from the original parent
-              atRule.remove();
-
-              // Add container query where the media query was
-              parentRule.append(containerQuery);
-
-              debugUtils.log('Added conditional wrapper for nested media query', atRule);
             } else {
               // Original logic for top-level media queries
               atRule.walkRules(rule => {
