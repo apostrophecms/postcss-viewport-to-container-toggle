@@ -46,8 +46,8 @@ const plugin = (opts = {}) => {
     ...options
   });
   const ruleProcessor = createRuleProcessor({
-    unitConverter,
-    ...options
+    ...options,
+    unitConverter
   });
   const selectorHelper = createSelectorHelper({ modifierAttr });
 
