@@ -684,8 +684,6 @@ body[data-breakpoint-preview-mode] {
       await run(plugin, input, output, opts);
     });
 
-    // This test should pass, at least approximately
-    // to show not selector is added at the root parent level
     it('should handle deeply nested media queries', async () => {
       const input = `
 .foo {
@@ -737,7 +735,6 @@ body[data-breakpoint-preview-mode] {
     }
   }
 }`;
-
       await run(plugin, input, output, opts);
     });
   });

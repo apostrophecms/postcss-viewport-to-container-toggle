@@ -57,6 +57,11 @@ const plugin = (opts = {}) => {
   // Flag to track if container context like sticky has been added
   let hasAddedContainerContext = false;
 
+  const isSameMediaQuery = (mq1, mq2) => {
+    return mq1.params === mq2.params &&
+      mq1.source?.start?.line === mq2.source?.start?.line;
+  };
+
   /**
  * Adds a container context with `position: relative` and `contain: layout` if required.
  *
@@ -248,14 +253,14 @@ const plugin = (opts = {}) => {
 
               // Find the root nesting level
               let rootParent = parentRule;
-              let nestingDepth = 0;
+              let isSingleLevel = true;
               while (rootParent.parent && rootParent.parent.type === 'rule') {
                 rootParent = rootParent.parent;
-                nestingDepth++;
+                isSingleLevel = false;
               }
 
               // For single-level nesting (Tailwind case), use simple approach
-              if (nestingDepth === 0) {
+              if (isSingleLevel) {
                 // Add container query inside the parent rule, after the media query
                 atRule.after(containerQuery);
 
@@ -335,13 +340,26 @@ const plugin = (opts = {}) => {
                   // Clone children of root parent (before container query is added)
                   rootParent.each(node => {
                     const clonedNode = node.clone();
-                    // Mark any media queries as processed
+
+                    // Remove media queries that are NOT the current one being processed
+                    clonedNode.walkAtRules('media', (mediaRule) => {
+                      // Keep the current media query we're processing, remove others
+                      if (mediaRule !== atRule && !isSameMediaQuery(mediaRule, atRule)) {
+                        mediaRule.remove();
+                      } else {
+                        mediaRule[processed] = true;
+                      }
+                    });
+
+                    // If this node itself is a media query
+                    // and not the one we're processing, skip it
                     if (clonedNode.type === 'atrule' && clonedNode.name === 'media') {
+                      if (!isSameMediaQuery(clonedNode, atRule)) {
+                        return; // Skip appending
+                      }
                       clonedNode[processed] = true;
                     }
-                    clonedNode.walkAtRules('media', (mediaRule) => {
-                      mediaRule[processed] = true;
-                    });
+
                     conditionalRule.append(clonedNode);
                   });
 

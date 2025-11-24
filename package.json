@@ -6,7 +6,7 @@
   "scripts": {
     "test": "npm run eslint && npm run mocha",
     "mocha": "mocha",
-    "eslint": "eslint --fix --ext .js,.vue ."
+    "eslint": "eslint --ext .js,.vue ."
   },
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
