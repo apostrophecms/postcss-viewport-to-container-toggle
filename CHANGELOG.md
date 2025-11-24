@@ -1,5 +1,14 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+* Refactors the `AtRule` to handle Tailwind 4.x nesting of media queries
+
+### Fixed
+
+* Changes the wrapping of the `:where()` pseudoclass so that it doesn't set specificity of some elements to `0`, resulting in a broken cascade.
+
 ## 2.0.1 (2025-08-06)
 
 ### Fixed

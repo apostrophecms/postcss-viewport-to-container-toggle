@@ -7,7 +7,7 @@ const opts = { modifierAttr: 'data-breakpoint-preview-mode' };
 let currentFileName = '';
 
 // Hook into Mocha's test context
-beforeEach(function() {
+beforeEach(function () {
   currentFileName = this.currentTest.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 });
 
@@ -549,6 +549,192 @@ body[data-breakpoint-preview-mode] {
   }
 }`;
 
+      await run(plugin, input, output, opts);
+    });
+
+    it('should convert nested media queries to container queries (Tailwind)', async () => {
+      const input = `
+.sm\\:text-lg {
+  @media (width >= 40rem) {
+    font-size: var(--text-lg);
+    line-height: 1.5;
+  }
+}
+`;
+
+      const output = `
+:where(body:not([data-breakpoint-preview-mode])) .sm\\:text-lg,
+  :where(body:not([data-breakpoint-preview-mode])).sm\\:text-lg {
+  @media (width >= 40rem) {
+    font-size: var(--text-lg);
+    line-height: 1.5;
+  }
+}
+.sm\\:text-lg {
+  @container (min-width: 40rem) {
+    font-size: var(--text-lg);
+    line-height: 1.5;
+  }
+}
+`;
+
+      await run(plugin, input, output, opts);
+    });
+
+    it('should handle multiple nested breakpoints', async () => {
+      const input = `
+.responsive {
+  @media (width >= 640px) {
+    padding: 2rem;
+  }
+  @media (width >= 1024px) {
+    padding: 4rem;
+  }
+}
+`;
+
+      const output = `
+:where(body:not([data-breakpoint-preview-mode])) .responsive,
+  :where(body:not([data-breakpoint-preview-mode])).responsive {
+  @media (width >= 640px) {
+    padding: 2rem;
+  }
+  @media (width >= 1024px) {
+    padding: 4rem;
+  }
+}
+.responsive {
+  @container (min-width: 640px) {
+    padding: 2rem;
+  }
+  @container (min-width: 1024px) {
+    padding: 4rem;
+  }
+}
+`;
+
+      await run(plugin, input, output, opts);
+    });
+
+    describe('deep nesting with media queries', () => {
+      it('should apply body check at root level for two-level nested media queries', async () => {
+        const input = `
+.parent {
+  .child {
+    @media (min-width: 768px) {
+      padding: 2rem;
+    }
+  }
+}`;
+
+        const output = `
+:where(body:not([data-breakpoint-preview-mode])) .parent,
+  :where(body:not([data-breakpoint-preview-mode])).parent {
+  .child {
+    @media (min-width: 768px) {
+      padding: 2rem;
+    }
+  }
+}
+.parent {
+  .child {
+    @container (min-width: 768px) {
+      padding: 2rem;
+    }
+  }
+}`;
+
+        await run(plugin, input, output, opts);
+      });
+    });
+
+    it('should apply body check at root level for three-level nested media queries', async () => {
+      const input = `
+.foo {
+  .bar {
+    .inside {
+      @media screen and (max-width: 500px) {
+        margin: 2rem;
+      }
+    }
+  }
+}`;
+
+      const output = `
+:where(body:not([data-breakpoint-preview-mode])) .foo,
+  :where(body:not([data-breakpoint-preview-mode])).foo {
+  .bar {
+    .inside {
+      @media screen and (max-width: 500px) {
+        margin: 2rem;
+      }
+    }
+  }
+}
+.foo {
+  .bar {
+    .inside {
+      @container (max-width: 500px) {
+        margin: 2rem;
+      }
+    }
+  }
+}`;
+
+      await run(plugin, input, output, opts);
+    });
+
+    it('should handle deeply nested media queries', async () => {
+      const input = `
+.foo {
+  .bar {
+    .inside {
+      @media screen and (max-width: 500px) {
+        margin: 2rem;
+      }
+
+      color: purple;
+    }
+    @media (width > 800px) {
+      top: 5rem;
+    }
+  }
+}`;
+
+      const output = `
+:where(body:not([data-breakpoint-preview-mode])) .foo,
+  :where(body:not([data-breakpoint-preview-mode])).foo {
+  .bar {
+    .inside {
+      @media screen and (max-width: 500px) {
+        margin: 2rem;
+      }
+
+      color: purple;
+    }
+    @media (width > 800px) {
+      top: 5rem;
+    }
+    @media (width > 800px) {
+      top: 5rem;
+    }
+  }
+}
+.foo {
+  .bar {
+    .inside {
+
+      color: purple;
+
+      @container (max-width: 500px) {
+        margin: 2rem;
+      }
+    }
+    @container (min-width: calc(800px + 0.02px)) {
+      top: 5rem;
+    }
+  }
+}`;
       await run(plugin, input, output, opts);
     });
   });

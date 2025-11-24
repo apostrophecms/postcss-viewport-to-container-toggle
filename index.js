@@ -46,8 +46,8 @@ const plugin = (opts = {}) => {
     ...options
   });
   const ruleProcessor = createRuleProcessor({
-    unitConverter,
-    ...options
+    ...options,
+    unitConverter
   });
   const selectorHelper = createSelectorHelper({ modifierAttr });
 
@@ -56,6 +56,11 @@ const plugin = (opts = {}) => {
 
   // Flag to track if container context like sticky has been added
   let hasAddedContainerContext = false;
+
+  const isSameMediaQuery = (mq1, mq2) => {
+    return mq1.params === mq2.params &&
+      mq1.source?.start?.line === mq2.source?.start?.line;
+  };
 
   /**
  * Adds a container context with `position: relative` and `contain: layout` if required.
@@ -171,9 +176,16 @@ const plugin = (opts = {}) => {
 
     AtRule: {
       media(atRule, helpers) {
+        debugUtils.logMediaQuery(atRule, 'START');
+
         if (atRule[processed]) {
+          debugUtils.log('Skipping already processed media query', atRule);
           return;
         }
+
+        // Check if this media query is nested inside a rule
+        const isNested = atRule.parent?.type === 'rule';
+        debugUtils.log(`Media query is ${isNested ? 'NESTED' : 'TOP-LEVEL'}`, atRule);
 
         let hasNotSelector = false;
         atRule.walkRules(rule => {
@@ -183,19 +195,25 @@ const plugin = (opts = {}) => {
         });
 
         if (hasNotSelector) {
+          debugUtils.log('Skipping - already has not selector', atRule);
           atRule[processed] = true;
           return;
         }
 
         const conditions = mediaProcessor.getMediaConditions(atRule);
+        debugUtils.log(`Extracted conditions: ${JSON.stringify(conditions)}`, atRule);
+
         if (conditions.length > 0) {
           debugUtils.stats.mediaQueriesProcessed++;
 
-          // Create container version first
           const containerConditions =
             mediaProcessor.convertToContainerConditions(conditions);
 
+          debugUtils.log(`Container conditions: ${containerConditions}`, atRule);
+
           if (containerConditions) {
+            debugUtils.log('Creating container query...', atRule);
+
             const containerQuery = new helpers.AtRule({
               name: 'container',
               params: containerConditions,
@@ -203,59 +221,254 @@ const plugin = (opts = {}) => {
               from: helpers.result.opts.from
             });
 
-            // Clone and process rules for container query - keep selectors clean
-            atRule.walkRules(rule => {
-              const containerRule = rule.clone({
-                source: rule.source,
-                from: helpers.result.opts.from,
-                selector: selectorHelper.updateBodySelectors(
-                  rule.selector,
-                  [ containerBodySelector ]
-                )
+            // For nested media queries
+            if (isNested) {
+              debugUtils.log('Processing nested media query declarations...', atRule);
+
+              atRule.each(node => {
+                if (node.type === 'decl') {
+                  debugUtils.log(`  Processing declaration: ${node.prop}: ${node.value}`, atRule);
+
+                  const containerDecl = node.clone({
+                    source: node.source,
+                    from: helpers.result.opts.from
+                  });
+
+                  // Convert viewport units if needed
+                  let value = containerDecl.value;
+                  if (Object.keys(unitConverter.units)
+                    .some(unit => value.includes(unit))) {
+                    value = unitConverter.convertUnitsInExpression(value);
+                    containerDecl.value = value;
+                    debugUtils.log(`  Converted value to: ${value}`, atRule);
+                  }
+
+                  containerQuery.append(containerDecl);
+                }
               });
 
-              ruleProcessor.processDeclarations(containerRule, {
-                isContainer: true,
-                from: helpers.result.opts.from
+              debugUtils.log(`  Total declarations in container query: ${containerQuery.nodes?.length || 0}`, atRule);
+
+              const parentRule = atRule.parent;
+
+              // Find the root nesting level
+              let rootParent = parentRule;
+              let isSingleLevel = true;
+              while (rootParent.parent && rootParent.parent.type === 'rule') {
+                rootParent = rootParent.parent;
+                isSingleLevel = false;
+              }
+
+              // For single-level nesting (Tailwind case), use simple approach
+              if (isSingleLevel) {
+                // Add container query inside the parent rule, after the media query
+                atRule.after(containerQuery);
+
+                const originalSelector = parentRule.selector;
+
+                let conditionalRule = null;
+                let alreadyHasWrapper = false;
+
+                let prevNode = parentRule.prev();
+                const targetSelector = selectorHelper
+                  .addTargetToSelectors(
+                    originalSelector,
+                    conditionalNotSelector
+                  );
+
+                while (prevNode) {
+                  if (prevNode.type === 'rule' && prevNode.selector === targetSelector) {
+                    conditionalRule = prevNode;
+                    alreadyHasWrapper = true;
+                    debugUtils.log('Found existing conditional wrapper, reusing it', atRule);
+                    break;
+                  }
+                  prevNode = prevNode.prev();
+                }
+
+                if (!alreadyHasWrapper) {
+                  conditionalRule = new helpers.Rule({
+                    selector: targetSelector,
+                    source: parentRule.source,
+                    from: helpers.result.opts.from
+                  });
+
+                  parentRule.before(conditionalRule);
+                  debugUtils.log('Created new conditional wrapper', atRule);
+                }
+
+                const clonedMedia = atRule.clone();
+                clonedMedia[processed] = true;
+                conditionalRule.append(clonedMedia);
+                atRule.remove();
+
+                debugUtils.log('Added conditional wrapper for nested media query', atRule);
+
+              } else {
+                // Multi-level nesting - hoist to root with full structure
+                const rootSelector = rootParent.selector;
+
+                // Check if wrapper exists at root level
+                let conditionalRule = null;
+                let alreadyHasWrapper = false;
+
+                let prevNode = rootParent.prev();
+                const targetSelector = selectorHelper
+                  .addTargetToSelectors(
+                    rootSelector,
+                    conditionalNotSelector
+                  );
+
+                while (prevNode) {
+                  if (prevNode.type === 'rule' && prevNode.selector === targetSelector) {
+                    conditionalRule = prevNode;
+                    alreadyHasWrapper = true;
+                    debugUtils.log('Found existing conditional wrapper, reusing it', atRule);
+                    break;
+                  }
+                  prevNode = prevNode.prev();
+                }
+
+                if (!alreadyHasWrapper) {
+                  // Create wrapper with full nested structure
+                  conditionalRule = new helpers.Rule({
+                    selector: targetSelector,
+                    source: rootParent.source,
+                    from: helpers.result.opts.from
+                  });
+
+                  // Clone children of root parent (before container query is added)
+                  rootParent.each(node => {
+                    const clonedNode = node.clone();
+
+                    // Remove media queries that are NOT the current one being processed
+                    clonedNode.walkAtRules('media', (mediaRule) => {
+                      // Keep the current media query we're processing, remove others
+                      if (mediaRule !== atRule && !isSameMediaQuery(mediaRule, atRule)) {
+                        mediaRule.remove();
+                      } else {
+                        mediaRule[processed] = true;
+                      }
+                    });
+
+                    // If this node itself is a media query
+                    // and not the one we're processing, skip it
+                    if (clonedNode.type === 'atrule' && clonedNode.name === 'media') {
+                      if (!isSameMediaQuery(clonedNode, atRule)) {
+                        return; // Skip appending
+                      }
+                      clonedNode[processed] = true;
+                    }
+
+                    conditionalRule.append(clonedNode);
+                  });
+
+                  rootParent.before(conditionalRule);
+                  debugUtils.log('Created new conditional wrapper at root level', atRule);
+                } else {
+                  // Wrapper exists, add media query to matching nested location
+                  const targetInWrapper = conditionalRule.first;
+                  if (targetInWrapper && targetInWrapper.type === 'rule') {
+                    // Build path from parentRule to rootParent
+                    const pathSelectors = [];
+                    let current = parentRule;
+                    while (current !== rootParent) {
+                      pathSelectors.unshift(current.selector);
+                      current = current.parent;
+                    }
+
+                    // Navigate to matching location in wrapper
+                    let navNode = targetInWrapper;
+                    for (const selector of pathSelectors) {
+                      let found = false;
+                      navNode.each(node => {
+                        if (node.type === 'rule' && node.selector === selector) {
+                          navNode = node;
+                          found = true;
+                          return false;
+                        }
+                      });
+                      if (!found) {
+                        break;
+                      }
+                    }
+
+                    // Add cloned media to correct location
+                    const clonedMedia = atRule.clone();
+                    clonedMedia[processed] = true;
+                    navNode.append(clonedMedia);
+                  }
+                }
+
+                // Remove from original
+                atRule.remove();
+
+                // Now add container query to original (after cloning)
+                parentRule.append(containerQuery);
+
+                debugUtils.log('Added conditional wrapper for nested media query', atRule);
+              }
+
+            } else {
+              // Original logic for top-level media queries
+              atRule.walkRules(rule => {
+                const containerRule = rule.clone({
+                  source: rule.source,
+                  from: helpers.result.opts.from,
+                  selector: selectorHelper.updateBodySelectors(
+                    rule.selector,
+                    [ containerBodySelector ]
+                  )
+                });
+
+                ruleProcessor.processDeclarations(containerRule, {
+                  isContainer: true,
+                  from: helpers.result.opts.from
+                });
+
+                containerRule.raws.before = '\n  ';
+                containerRule.raws.after = '\n  ';
+                containerRule.walkDecls(decl => {
+                  decl.raws.before = '\n    ';
+                });
+
+                containerQuery.append(containerRule);
               });
 
-              containerRule.raws.before = '\n  ';
-              containerRule.raws.after = '\n  ';
-              containerRule.walkDecls(decl => {
-                decl.raws.before = '\n    ';
-              });
-
-              containerQuery.append(containerRule);
-            });
-
-            // Add container query
-            atRule.after(containerQuery);
+              // Add container query
+              atRule.after(containerQuery);
+            }
           }
 
           // Now handle viewport media query modifications
           // We want the original media query to get the not selector
-          atRule.walkRules(rule => {
-            // Skip if already modified with not selector
-            if (rule.selector.includes(conditionalNotSelector)) {
-              return;
-            }
+          if (!isNested) {
+            atRule.walkRules(rule => {
+              // Skip if already modified with not selector
+              if (rule.selector.includes(conditionalNotSelector)) {
+                return;
+              }
 
-            const viewportRule = rule.clone({
-              source: rule.source,
-              from: helpers.result.opts.from
+              const viewportRule = rule.clone({
+                source: rule.source,
+                from: helpers.result.opts.from
+              });
+
+              viewportRule.selector = selectorHelper.addTargetToSelectors(
+                rule.selector,
+                conditionalNotSelector
+              );
+
+              rule.replaceWith(viewportRule);
             });
-
-            viewportRule.selector = selectorHelper.addTargetToSelectors(
-              rule.selector,
-              conditionalNotSelector
-            );
-
-            rule.replaceWith(viewportRule);
-          });
+          }
+        } else {
+          debugUtils.log('No conditions found - skipping', atRule);
         }
 
         // Only mark the atRule as processed after all transformations
         atRule[processed] = true;
+        debugUtils.logMediaQuery(atRule, 'END');
       }
     },
 

@@ -1,7 +1,12 @@
-
 const createSelectorHelper = ({ modifierAttr }) => {
   const bodyRegex = /^body|^html.*\s+body|^html.*\s*>\s*body/;
   const tagRegex = /^\.|^#|^\[|^:/;
+
+  /**
+   * Strategic use of :where() - only wrap the added targeting attributes,
+   * not the entire selector. This preserves the original selector's specificity
+   * while adding minimal specificity for the targeting mechanism.
+   */
   const wrapInWhere = (selector) => `:where(${selector})`;
 
   const addTargetToSelectors = (
@@ -13,6 +18,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
       .reduce((acc, part) => {
         const trimmed = part.trim();
         const isBodySelector = trimmed.match(bodyRegex);
+
         if (!isBodySelector) {
           acc.push(`${wrapInWhere(target)} ${trimmed}`);
         }
@@ -61,6 +67,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
       selector = selector.replace(bodyRegex, '');
 
       // Selector is a body without identifiers, we put style in the body directly
+      // Don't wrap here since this IS the body being replaced
       if (!selector) {
         return target;
       }
@@ -70,6 +77,7 @@ const createSelectorHelper = ({ modifierAttr }) => {
     // in case the body has this identifier
     const noTagSelector = selector.match(tagRegex);
     if (noTagSelector) {
+      // For body-level selectors, wrap only if it's not a body replacement
       const targetSelector = isBodySelector ? target : wrapInWhere(target);
       return `${targetSelector}${selector}`;
     }
