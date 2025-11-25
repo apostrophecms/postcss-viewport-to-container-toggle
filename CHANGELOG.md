@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 2.1.0 (2025-11-25)
 
 ### Adds
 * Refactors the `AtRule` to handle Tailwind 4.x nesting of media queries
